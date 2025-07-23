@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Rapports et Statistiques - GestionMySoutenance{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Rapports et Statistiques</h1>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Générer un Rapport de Taux de Validation</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" class="row g-3 align-items-end">
+            {% csrf_token %}
+            <div class="col-md-4">
+                <label for="id_annee_academique" class="form-label">Année Académique</label>
+                <select name="annee_academique" id="id_annee_academique" class="form-select">
+                    <option value="">Toutes les années</option>
+                    {% for annee in annees_academiques %}
+                        <option value="{{ annee.id_annee_academique }}" {% if annee.id_annee_academique == request.POST.annee_academique %}selected{% endif %}>{{ annee.libelle_annee_academique }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="id_specialite" class="form-label">Spécialité</label>
+                <select name="specialite" id="id_specialite" class="form-select">
+                    <option value="">Toutes les spécialités</option>
+                    {% for specialite in specialites %}
+                        <option value="{{ specialite.id_specialite }}" {% if specialite.id_specialite == request.POST.specialite %}selected{% endif %}>{{ specialite.libelle_specialite }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" name="generate_validation_report" class="btn btn-primary w-100"><i class="fas fa-chart-pie"></i> Générer le rapport</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if validation_report %}
+<div class="card shadow-sm mt-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">Résultats du Rapport de Taux de Validation</h5>
+    </div>
+    <div class="card-body">
+        <p class="lead"><strong>Total des rapports :</strong> {{ validation_report.total_rapports }}</p>
+        <div class="row">
+            <div class="col-md-4 text-center">
+                <div class="p-3 border rounded bg-light mb-3">
+                    <h6 class="text-success">Validés</h6>
+                    <p class="fs-4 fw-bold">{{ validation_report.validated_rapports }} ({{ validation_report.validation_rate }}%)</p>
+                </div>
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="p-3 border rounded bg-light mb-3">
+                    <h6 class="text-danger">Refusés</h6>
+                    <p class="fs-4 fw-bold">{{ validation_report.rejected_rapports }} ({{ validation_report.rejection_rate }}%)</p>
+                </div>
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="p-3 border rounded bg-light mb-3">
+                    <h6 class="text-info">En Cours</h6>
+                    <p class="fs-4 fw-bold">{{ validation_report.in_progress_rapports }} ({{ validation_report.in_progress_rate }}%)</p>
+                </div>
+            </div>
+        </div>
+        <div class="alert alert-info mt-3">
+            <i class="fas fa-info-circle me-2"></i> Pour une visualisation graphique, une bibliothèque JavaScript (ex: Chart.js) serait intégrée ici.
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card shadow-sm mt-4">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0">Autres Rapports (à venir)</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted">Cette section pourrait inclure des rapports sur les délais de traitement, les thèmes populaires, etc.</p>
+        <button class="btn btn-outline-secondary disabled">Générer rapport de délais</button>
+    </div>
+</div>
+{% endblock %}

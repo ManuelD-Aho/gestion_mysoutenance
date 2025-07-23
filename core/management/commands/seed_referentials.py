@@ -1,14 +1,15 @@
-from django.contrib.auth.models import User, Group, Permission
+from django.contrib.auth.models import User, Group # Permission n'est pas directement utilisé ici
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 import datetime
+# import random # Supprimé car non utilisé directement dans le seed pour des valeurs aléatoires
 import random
 
 from core.enums import (
-    StatutRapport, StatutCompte, TypePenalite, StatutPenalite, StatutPaiement,
+    StatutRapport, StatutPenalite, StatutPaiement,
     DecisionPassage, StatutConformite, ModeSession, StatutSession, DecisionVote,
-    StatutPV, DecisionValidationPV, StatutReclamation
+    StatutPV, DecisionValidationPV, StatutReclamation # StatutCompte n'est pas utilisé ici
 )
 from core.models import (
     AnneeAcademique, NiveauEtude, Specialite, Inscription, Entreprise, Stage, Etudiant, Enseignant,

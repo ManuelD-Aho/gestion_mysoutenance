@@ -1,6 +1,6 @@
-from django.urls import path, re_path
-from . import views
-from django.contrib.auth import views as auth_views # Pour les vues d'authentification génériques de Django
+from django.urls import path, include
+from . import views # <-- Cette ligne est cruciale et doit être présente
+# from django.contrib.auth import views as auth_views # Commenté car non directement utilisé par nos vues personnalisées
 
 urlpatterns = [
     # --- Vues d'Authentification ---

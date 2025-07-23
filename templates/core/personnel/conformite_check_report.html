@@ -2,6 +2,8 @@
 
 {% block title %}Vérification Conformité - {{ rapport.libelle_rapport_etudiant }}{% endblock %}
 
+{% load core_filters %} {# <-- AJOUTEZ CETTE LIGNE #}
+
 {% block content %}
 <h1 class="mb-4">Vérification de Conformité : "{{ rapport.libelle_rapport_etudiant }}"</h1>
 <p class="lead">Étudiant : {{ rapport.etudiant.nom_complet }}</p>
@@ -68,19 +70,12 @@
 
 {% block extra_js %}
 <script>
-    // Fonction utilitaire pour accéder aux champs du formulaire par leur nom dynamique
-    // Nécessaire car Django ne permet pas d'accéder directement aux champs dynamiques dans le template
-    // via form.critere_X_statut
-    // Cette fonction est un hack, idéalement, on passerait un dictionnaire de formulaires de section
-    // ou on utiliserait un custom tag pour rendre le champ.
-    // Pour l'instant, on l'utilise pour la démo.
-    function get_item(obj, key) {
-        return obj[key];
-    }
-    // Enregistrer la fonction dans le contexte global pour qu'elle soit accessible dans le template
-    // C'est une solution temporaire pour la démo, pas une bonne pratique en production.
-    // Une meilleure approche serait un custom template tag.
-    // Pour l'instant, on assume que le template est rendu avec un contexte qui inclut cette fonction.
-    // Ou on peut la retirer et rendre les champs manuellement.
+    // La fonction get_item en JS n'est plus nécessaire ici car le filtre Django est utilisé.
+    // tinymce.init({
+    //     selector: '.wysiwyg-editor',
+    //     plugins: 'advlist autolink lists link image charmap print preview anchor',
+    //     toolbar_mode: 'floating',
+    //     toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help'
+    // });
 </script>
 {% endblock %}

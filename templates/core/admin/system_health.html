@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Santé du Système - GestionMySoutenance{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Santé du Système</h1>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Métriques de Performance Actuelles</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p class="lead"><strong>Utilisation CPU :</strong> 
+                    <span class="badge bg-{% if metrics.cpu_usage > 70 %}danger{% elif metrics.cpu_usage > 40 %}warning{% else %}success{% endif %} fs-5">{{ metrics.cpu_usage }}%</span>
+                </p>
+                <p class="lead"><strong>Utilisation RAM :</strong> 
+                    <span class="badge bg-{% if metrics.ram_usage > 80 %}danger{% elif metrics.ram_usage > 60 %}warning{% else %}success{% endif %} fs-5">{{ metrics.ram_usage }}%</span>
+                </p>
+                <p class="lead"><strong>Connexions Base de Données :</strong> 
+                    <span class="badge bg-info fs-5">{{ metrics.db_connections }}</span>
+                </p>
+            </div>
+            <div class="col-md-6">
+                <p class="lead"><strong>Tâches en File d'Attente :</strong> 
+                    <span class="badge bg-{% if metrics.queue_size > 50 %}danger{% elif metrics.queue_size > 10 %}warning{% else %}success{% endif %} fs-5">{{ metrics.queue_size }}</span>
+                </p>
+                <p class="lead"><strong>Utilisateurs Actifs :</strong> 
+                    <span class="badge bg-info fs-5">{{ metrics.active_users }}</span>
+                </p>
+                <p class="lead"><strong>Rapports en Cours :</strong> 
+                    <span class="badge bg-info fs-5">{{ metrics.reports_in_progress }}</span>
+                </p>
+            </div>
+        </div>
+        <p class="text-muted text-end mt-3">Dernière mise à jour : {{ metrics.timestamp|date:"d M Y H:i:s" }}</p>
+    </div>
+</div>
+
+<div class="alert alert-info mt-4" role="alert">
+    <i class="fas fa-info-circle me-2"></i> Ces métriques sont simulées pour la démonstration. En production, elles seraient collectées à partir de systèmes de monitoring réels (ex: Prometheus, Grafana).
+</div>
+{% endblock %}

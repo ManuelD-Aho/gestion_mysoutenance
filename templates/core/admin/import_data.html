@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Importation de Données - GestionMySoutenance{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Importation de Données</h1>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Importer un fichier de données</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="id_import_file" class="form-label">Fichier à importer (CSV, Excel)</label>
+                <input type="file" name="import_file" id="id_import_file" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="id_entity_type" class="form-label">Type d'entité à importer</label>
+                <select name="entity_type" id="id_entity_type" class="form-control" required>
+                    <option value="">--- Sélectionner ---</option>
+                    {% for type in entity_types %}
+                        <option value="{{ type }}">{{ type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="alert alert-info mt-3">
+                <i class="fas fa-info-circle me-2"></i> L'importation de données est une opération asynchrone. Vous recevrez une notification une fois le traitement terminé.
+                <br>Pour une implémentation complète, une interface de mappage des colonnes serait nécessaire ici.
+            </div>
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-success"><i class="fas fa-upload"></i> Lancer l'importation</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

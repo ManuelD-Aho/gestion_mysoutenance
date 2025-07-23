@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Détail Utilisateur {{ user_obj.username }} - GestionMySoutenance{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Détail Utilisateur : {{ user_obj.username }}</h1>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Informations du Compte</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Nom d'utilisateur :</strong> {{ user_obj.username }}</p>
+                <p><strong>Nom complet :</strong> {{ user_obj.first_name }} {{ user_obj.last_name }}</p>
+                <p><strong>Email :</strong> {{ user_obj.email }}</p>
+                <p><strong>Statut du compte :</strong> 
+                    {% if user_obj.is_active %}
+                        <span class="badge bg-success">Actif</span>
+                    {% else %}
+                        <span class="badge bg-danger">Inactif</span>
+                    {% endif %}
+                </p>
+                <p><strong>Email validé :</strong> 
+                    {% if user_obj.email_valide %}
+                        <span class="badge bg-success">Oui</span>
+                    {% else %}
+                        <span class="badge bg-danger">Non</span>
+                    {% endif %}
+                </p>
+                <p><strong>2FA active :</strong> 
+                    {% if user_obj.is_2fa_active %}
+                        <span class="badge bg-success">Oui</span>
+                    {% else %}
+                        <span class="badge bg-danger">Non</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Gestion du Rôle et Actions</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Rôle actuel :</strong> <span class="badge bg-secondary">{{ current_role }}</span></p>
+                <form method="post" action="{% url 'admin_user_detail' user_id=user_obj.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_new_group_name" class="form-label">Changer le rôle en :</label>
+                        <select name="new_group_name" id="id_new_group_name" class="form-control">
+                            {% for group in all_groups %}
+                                <option value="{{ group.name }}" {% if group.name == current_role %}selected{% endif %}>{{ group.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" name="assign_role" class="btn btn-info"><i class="fas fa-user-tag"></i> Changer le rôle</button>
+                </form>
+
+                <hr class="my-4">
+
+                <h6 class="card-title">Actions sur le compte</h6>
+                <div class="d-grid gap-2">
+                    {% if user_obj.is_active %}
+                        <button type="submit" name="deactivate_account" class="btn btn-danger" form="user_actions_form"><i class="fas fa-user-slash"></i> Désactiver le compte</button>
+                    {% else %}
+                        <button type="submit" name="activate_account" class="btn btn-success" form="user_actions_form"><i class="fas fa-user-check"></i> Activer le compte</button>
+                    {% endif %}
+                    <button type="submit" name="reset_password_admin" class="btn btn-warning" form="user_actions_form"><i class="fas fa-key"></i> Réinitialiser le mot de passe</button>
+                </div>
+                <form id="user_actions_form" method="post" action="{% url 'admin_user_detail' user_id=user_obj.id %}" class="d-none">{% csrf_token %}</form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

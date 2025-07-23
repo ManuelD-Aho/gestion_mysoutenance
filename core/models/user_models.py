@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-# Importation manquante
-from core.enums import StatutReclamation
+from core.enums import StatutReclamation # Assurez-vous que cette importation est présente
 
 class Etudiant(models.Model):
     utilisateur = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='profil_etudiant')
@@ -22,6 +21,9 @@ class Etudiant(models.Model):
     def nom_complet(self):
         return f"{self.prenom} {self.nom}"
 
+    def __str__(self):
+        return f"{self.prenom} {self.nom}"
+
 class Enseignant(models.Model):
     utilisateur = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='profil_enseignant')
     nom = models.CharField(max_length=100)
@@ -33,6 +35,9 @@ class Enseignant(models.Model):
     def nom_complet(self):
         return f"{self.prenom} {self.nom}"
 
+    def __str__(self):
+        return f"{self.prenom} {self.nom}"
+
 class PersonnelAdministratif(models.Model):
     utilisateur = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='profil_personnel')
     nom = models.CharField(max_length=100)
@@ -42,6 +47,9 @@ class PersonnelAdministratif(models.Model):
 
     @property
     def nom_complet(self):
+        return f"{self.prenom} {self.nom}"
+
+    def __str__(self):
         return f"{self.prenom} {self.nom}"
 
 class Grade(models.Model):
@@ -75,6 +83,9 @@ class FonctionEnseignant(models.Model):
     class Meta:
         unique_together = ('enseignant', 'fonction', 'date_debut_occupation')
 
+# Extension du modèle User de Django pour les champs de sécurité et de notification
+# Ces champs sont ajoutés dynamiquement. Les linters peuvent avoir du mal à les reconnaître.
+# Pour une solution plus robuste pour les linters, un Custom User Model serait préférable.
 User.add_to_class('email_valide', models.BooleanField(default=False))
 User.add_to_class('token_validation_email', models.CharField(max_length=255, null=True, blank=True))
 User.add_to_class('date_expiration_token', models.DateTimeField(null=True, blank=True))

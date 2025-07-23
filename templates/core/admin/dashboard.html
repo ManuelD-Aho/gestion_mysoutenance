@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de Bord Administrateur - GestionMySoutenance{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Tableau de Bord Administrateur Système</h1>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card text-center bg-primary text-white shadow-sm">
+            <div class="card-body">
+                <i class="fas fa-users fa-3x mb-3"></i>
+                <h5 class="card-title">Utilisateurs Totaux</h5>
+                <p class="card-text fs-2 fw-bold">{{ total_users }}</p>
+                <a href="{% url 'admin_user_management' %}" class="btn btn-outline-light">Gérer les utilisateurs</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card text-center bg-success text-white shadow-sm">
+            <div class="card-body">
+                <i class="fas fa-user-graduate fa-3x mb-3"></i>
+                <h5 class="card-title">Étudiants Actifs</h5>
+                <p class="card-text fs-2 fw-bold">{{ active_students }}</p>
+                <a href="{% url 'admin_user_management' %}?profile_type=Etudiant" class="btn btn-outline-light">Voir les étudiants</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card text-center bg-info text-white shadow-sm">
+            <div class="card-body">
+                <i class="fas fa-file-alt fa-3x mb-3"></i>
+                <h5 class="card-title">Rapports Soumis (Année Actuelle)</h5>
+                <p class="card-text fs-2 fw-bold">{{ reports_submitted_this_year }}</p>
+                <a href="{% url 'admin_reporting' %}" class="btn btn-outline-light">Voir les rapports</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mt-4">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0">Santé du Système (Métriques en temps réel)</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Utilisation CPU :</strong> <span class="badge bg-{% if metrics.cpu_usage > 70 %}danger{% elif metrics.cpu_usage > 40 %}warning{% else %}success{% endif %}">{{ metrics.cpu_usage }}%</span></p>
+                <p><strong>Utilisation RAM :</strong> <span class="badge bg-{% if metrics.ram_usage > 80 %}danger{% elif metrics.ram_usage > 60 %}warning{% else %}success{% endif %}">{{ metrics.ram_usage }}%</span></p>
+                <p><strong>Connexions DB :</strong> <span class="badge bg-info">{{ metrics.db_connections }}</span></p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Tâches en file d'attente :</strong> <span class="badge bg-{% if metrics.queue_size > 50 %}danger{% elif metrics.queue_size > 10 %}warning{% else %}success{% endif %}">{{ metrics.queue_size }}</span></p>
+                <p><strong>Rapports en cours de traitement :</strong> <span class="badge bg-info">{{ metrics.reports_in_progress }}</span></p>
+                <p><strong>Dernière mise à jour :</strong> <small class="text-muted">{{ metrics.timestamp|date:"d M Y H:i:s" }}</small></p>
+            </div>
+        </div>
+        <div class="text-end mt-3">
+            <a href="{% url 'admin_system_health' %}" class="btn btn-outline-secondary btn-sm">Détails de la santé système</a>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Gestion des Logs</h5>
+            </div>
+            <div class="card-body text-center">
+                <p>Accédez aux journaux d'audit et d'erreurs du système.</p>
+                <a href="{% url 'admin_audit_logs' %}" class="btn btn-dark"><i class="fas fa-clipboard-list"></i> Voir les logs</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Importation de Données</h5>
+            </div>
+            <div class="card-body text-center">
+                <p>Importez des données d'utilisateurs ou d'autres entités en masse.</p>
+                <a href="{% url 'admin_import_data' %}" class="btn btn-dark"><i class="fas fa-file-import"></i> Importer des données</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

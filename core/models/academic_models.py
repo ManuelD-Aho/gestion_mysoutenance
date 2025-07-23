@@ -1,5 +1,4 @@
 from django.db import models
-
 from core.enums import StatutPaiement, DecisionPassage, TypePenalite, StatutPenalite
 
 

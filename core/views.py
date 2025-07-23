@@ -3,29 +3,27 @@ from django.contrib.auth import login, logout, authenticate, update_session_auth
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
-from django.urls import reverse
-from django.http import HttpResponse, HttpResponseForbidden, JsonResponse, Http404
+# from django.urls import reverse # Supprimé car non utilisé
+# from django.http import HttpResponseForbidden, JsonResponse # Supprimé car non utilisé
+from django.http import HttpResponse, Http404  # Gardé HttpResponse, Http404
+# from django.template.loader import render_to_string # Déjà importé dans services, mais peut être utile ici si des rendus directs sont faits
 from django.db import transaction
 from django.conf import settings
-from django.template.loader import render_to_string
 from django.core.exceptions import PermissionDenied
 import datetime
-import json
+# import json # Supprimé car non utilisé
 import os
 
-# Importations des modèles d'authentification de Django
 from django.contrib.auth.models import User, Group, Permission
 
-# Importation manquante
-from django.utils import timezone # <-- CORRECTION ICI : Ajout de l'importation de timezone
+from django.utils import timezone
 
 from .forms import (
     LoginForm, PasswordResetEmailForm, SetNewPasswordForm, TwoFactorSetupForm,
-    UserProfileForm, EtudiantProfileForm, RapportEtudiantForm, SectionRapportForm,
-    ConformityChecklistForm,
-    RapportCorrectionForm, SessionValidationForm, VoteCommissionForm, ProcesVerbalForm,
-    PVApprovalForm, InscriptionForm, StageForm, PenaliteForm, NoteForm,
-    ReclamationForm, ReclamationResponseForm, DelegationForm, UserCreationForm
+    UserProfileForm, EtudiantProfileForm, RapportEtudiantForm, ConformityChecklistForm,
+    ProcesVerbalForm, PVApprovalForm, NoteForm,  # Imports nettoyés
+    ReclamationForm, ReclamationResponseForm, DelegationForm, UserCreationForm,
+    SessionValidationForm, VoteCommissionForm  # Ajoutés car utilisés dans les vues
 )
 from .services import (
     AuthentificationService, RapportService, ConformiteService, CommissionService,
@@ -38,33 +36,39 @@ from .models import (
     AnneeAcademique
 )
 from .enums import (
-    StatutRapport, StatutCompte, TypePenalite, StatutPenalite, StatutPaiement,
-    DecisionPassage, StatutConformite, ModeSession, StatutSession, DecisionVote,
-    StatutPV, DecisionValidationPV, StatutReclamation
+    StatutRapport, StatutPenalite, StatutPV, DecisionValidationPV, StatutReclamation, StatutSession  # Imports nettoyés
 )
 
 import logging
+
 audit_logger = logging.getLogger('audit_logger')
 error_logger = logging.getLogger('error_logger')
+
 
 # --- Fonctions d'aide pour les tests de groupe ---
 def is_admin_sys(user):
     return user.is_authenticated and user.groups.filter(name='Administrateur Système').exists()
 
+
 def is_etudiant(user):
     return user.is_authenticated and user.groups.filter(name='Étudiant').exists()
+
 
 def is_responsable_scolarite(user):
     return user.is_authenticated and user.groups.filter(name='Responsable Scolarité').exists()
 
+
 def is_agent_conformite(user):
     return user.is_authenticated and user.groups.filter(name='Agent de Conformité').exists()
+
 
 def is_membre_commission(user):
     return user.is_authenticated and user.groups.filter(name='Membre de Commission').exists()
 
+
 def is_enseignant(user):
     return user.is_authenticated and user.groups.filter(name='Enseignant').exists()
+
 
 # --- Vues d'Authentification ---
 
@@ -95,7 +99,8 @@ def user_login(request):
                     AuthentificationService.increment_login_attempts(user_obj)
                     if AuthentificationService.is_account_locked(user_obj):
                         messages.error(request, "Votre compte est temporairement bloqué. Veuillez réessayer plus tard.")
-                        audit_logger.warning(f"Connexion échouée pour {username}: compte bloqué après tentatives excessives.")
+                        audit_logger.warning(
+                            f"Connexion échouée pour {username}: compte bloqué après tentatives excessives.")
                         return render(request, 'core/auth/login.html', {'form': form})
                 messages.error(request, "Nom d'utilisateur ou mot de passe incorrect.")
                 audit_logger.warning(f"Connexion échouée pour {username}: identifiants incorrects.")
@@ -105,12 +110,14 @@ def user_login(request):
         form = LoginForm()
     return render(request, 'core/auth/login.html', {'form': form})
 
+
 @login_required
 def user_logout(request):
     audit_logger.info(f"Déconnexion de {request.user.username}.")
     logout(request)
     messages.info(request, "Vous avez été déconnecté.")
     return redirect('login')
+
 
 def password_reset_request(request):
     if request.method == 'POST':
@@ -119,18 +126,22 @@ def password_reset_request(request):
             email = form.cleaned_data['email']
             user = User.objects.filter(email=email).first()
             if user:
-                messages.info(request, "Si un compte avec cet email existe, des instructions de réinitialisation ont été envoyées.")
+                messages.info(request,
+                              "Si un compte avec cet email existe, des instructions de réinitialisation ont été envoyées.")
                 audit_logger.info(f"Demande de réinitialisation de mot de passe pour {email}.")
             else:
-                messages.info(request, "Si un compte avec cet email existe, des instructions de réinitialisation ont été envoyées.")
+                messages.info(request,
+                              "Si un compte avec cet email existe, des instructions de réinitialisation ont été envoyées.")
             return redirect('login')
     else:
         form = PasswordResetEmailForm()
     return render(request, 'core/auth/password_reset_request.html', {'form': form})
 
+
 def password_reset_confirm(request, uidb64, token):
     messages.info(request, "Cette page est un placeholder pour la réinitialisation de mot de passe.")
     return redirect('login')
+
 
 @login_required
 def email_validation_confirm(request):
@@ -148,6 +159,7 @@ def email_validation_confirm(request):
         error_logger.error(f"Erreur lors de la validation d'email pour {request.user.username}: {e}")
         messages.error(request, "Une erreur est survenue lors de la validation de votre email.")
     return redirect('dashboard_redirect')
+
 
 @login_required
 def two_factor_setup(request):
@@ -180,6 +192,7 @@ def two_factor_setup(request):
 
     return render(request, 'core/auth/2fa_setup.html', {'secret': secret, 'form': form})
 
+
 @login_required
 def two_factor_verify(request):
     if not request.user.is_2fa_active:
@@ -207,6 +220,7 @@ def two_factor_verify(request):
         form = TwoFactorSetupForm()
     return render(request, 'core/auth/2fa_verify.html', {'form': form})
 
+
 @login_required
 def disable_2fa(request):
     if request.method == 'POST':
@@ -219,6 +233,7 @@ def disable_2fa(request):
             messages.error(request, f"Erreur lors de la désactivation de la 2FA: {e}")
             error_logger.error(f"Erreur désactivation 2FA pour {request.user.username}: {e}")
     return redirect('user_profile')
+
 
 # --- Vues Communes ---
 
@@ -235,6 +250,7 @@ def dashboard_redirect(request):
     else:
         messages.warning(request, "Votre rôle ne vous donne pas accès à un tableau de bord spécifique.")
         return render(request, 'core/dashboard_base.html')
+
 
 @login_required
 def user_profile(request):
@@ -303,6 +319,7 @@ def user_profile(request):
     }
     return render(request, 'core/user_profile.html', context)
 
+
 # --- Vues Étudiant ---
 
 @login_required
@@ -324,6 +341,7 @@ def etudiant_dashboard(request):
     }
     return render(request, 'core/etudiant/dashboard.html', context)
 
+
 @login_required
 @user_passes_test(is_etudiant, login_url='dashboard_redirect')
 def rapport_create_or_edit(request, rapport_id=None):
@@ -336,7 +354,10 @@ def rapport_create_or_edit(request, rapport_id=None):
         if rapport.statut_rapport not in [StatutRapport.BROUILLON, StatutRapport.NON_CONFORME]:
             messages.error(request, "Ce rapport ne peut plus être modifié dans son statut actuel.")
             return redirect('rapport_suivi', rapport_id=rapport.id_rapport_etudiant)
-        sections_data_for_template = list(SectionRapport.objects.filter(rapport_etudiant=rapport).order_by('ordre').values('titre_section', 'contenu_section', 'ordre'))
+        sections_data_for_template = list(
+            SectionRapport.objects.filter(rapport_etudiant=rapport).order_by('ordre').values('titre_section',
+                                                                                             'contenu_section',
+                                                                                             'ordre'))
         rapport_form = RapportEtudiantForm(instance=rapport, etudiant=etudiant_profile)
     else:
         rapport_form = RapportEtudiantForm(etudiant=etudiant_profile)
@@ -378,7 +399,8 @@ def rapport_create_or_edit(request, rapport_id=None):
                         rapport.stage = rapport_form.cleaned_data['stage']
                         rapport.save()
 
-                    current_section_titles = set(SectionRapport.objects.filter(rapport_etudiant=rapport).values_list('titre_section', flat=True))
+                    current_section_titles = set(
+                        SectionRapport.objects.filter(rapport_etudiant=rapport).values_list('titre_section', flat=True))
 
                     for titre, data in section_data_from_post.items():
                         SectionRapport.objects.update_or_create(
@@ -412,15 +434,16 @@ def rapport_create_or_edit(request, rapport_id=None):
                 error_logger.error(f"Permission refusée soumission rapport pour {request.user.username}: {e}")
             except Exception as e:
                 messages.error(request, f"Une erreur inattendue est survenue: {e}")
-                error_logger.critical(f"Erreur inattendue soumission rapport pour {request.user.username}: {e}", exc_info=True)
+                error_logger.critical(f"Erreur inattendue soumission rapport pour {request.user.username}: {e}",
+                                      exc_info=True)
         else:
             messages.error(request, "Veuillez corriger les erreurs dans le formulaire principal.")
 
         sections_data_for_template = []
         for titre, data in section_data_from_post.items():
-            sections_data_for_template.append({'titre_section': titre, 'contenu_section': data['contenu'], 'ordre': data['ordre']})
+            sections_data_for_template.append(
+                {'titre_section': titre, 'contenu_section': data['contenu'], 'ordre': data['ordre']})
         sections_data_for_template.sort(key=lambda x: x['ordre'])
-
 
     context = {
         'rapport_form': rapport_form,
@@ -430,6 +453,7 @@ def rapport_create_or_edit(request, rapport_id=None):
         'is_non_conforme': rapport and rapport.statut_rapport == StatutRapport.NON_CONFORME,
     }
     return render(request, 'core/etudiant/rapport_edit.html', context)
+
 
 @login_required
 @user_passes_test(is_etudiant, login_url='dashboard_redirect')
@@ -445,17 +469,20 @@ def rapport_suivi(request, rapport_id):
     }
     return render(request, 'core/etudiant/rapport_suivi.html', context)
 
+
 @login_required
 @user_passes_test(is_etudiant, login_url='dashboard_redirect')
 def etudiant_documents(request):
     etudiant_profile = request.user.profil_etudiant
-    official_documents = DocumentOfficiel.objects.filter(etudiant=etudiant_profile, est_officiel=True).order_by('-date_generation')
+    official_documents = DocumentOfficiel.objects.filter(etudiant=etudiant_profile, est_officiel=True).order_by(
+        '-date_generation')
 
     if request.method == 'POST' and 'generate_provisional' in request.POST:
         try:
             pdf_content = ScolariteService.generate_provisional_transcript(etudiant_profile)
             response = HttpResponse(pdf_content, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="releve_provisoire_{etudiant_profile.nom_complet.replace(" ", "_")}_{timezone.now().strftime("%Y%m%d")}.pdf"'
+            response[
+                'Content-Disposition'] = f'attachment; filename="releve_provisoire_{etudiant_profile.nom_complet.replace(" ", "_")}_{timezone.now().strftime("%Y%m%d")}.pdf"'
             audit_logger.info(f"Relevé provisoire généré et téléchargé par {request.user.username}.")
             return response
         except Exception as e:
@@ -467,6 +494,7 @@ def etudiant_documents(request):
         'official_documents': official_documents,
     }
     return render(request, 'core/etudiant/documents.html', context)
+
 
 @login_required
 @user_passes_test(is_etudiant, login_url='dashboard_redirect')
@@ -498,6 +526,7 @@ def etudiant_reclamations(request):
     }
     return render(request, 'core/etudiant/reclamations.html', context)
 
+
 # --- Vues Personnel Administratif ---
 
 @login_required
@@ -510,6 +539,7 @@ def personnel_dashboard(request):
     messages.info(request, "Bienvenue sur le tableau de bord du personnel administratif.")
     return render(request, 'core/personnel/dashboard.html')
 
+
 @login_required
 @user_passes_test(is_agent_conformite, login_url='dashboard_redirect')
 def conformite_dashboard(request):
@@ -519,12 +549,14 @@ def conformite_dashboard(request):
     }
     return render(request, 'core/personnel/conformite_dashboard.html', context)
 
+
 @login_required
 @user_passes_test(is_agent_conformite, login_url='dashboard_redirect')
 def conformite_check_report(request, rapport_id):
     rapport = get_object_or_404(RapportEtudiant, id_rapport_etudiant=rapport_id)
     if rapport.statut_rapport != StatutRapport.SOUMIS:
-        messages.warning(request, f"Ce rapport n'est pas en statut 'Soumis' et ne peut pas être vérifié. Statut actuel: {rapport.get_statut_rapport_display()}")
+        messages.warning(request,
+                         f"Ce rapport n'est pas en statut 'Soumis' et ne peut pas être vérifié. Statut actuel: {rapport.get_statut_rapport_display()}")
         return redirect('conformite_dashboard')
 
     criteres = CritereConformite.objects.filter(est_actif=True).order_by('libelle_critere')
@@ -543,10 +575,13 @@ def conformite_check_report(request, rapport_id):
                 return redirect('conformite_dashboard')
             except ValueError as e:
                 messages.error(request, f"Erreur lors de l'application de la checklist: {e}")
-                error_logger.error(f"Erreur application checklist pour {request.user.username} sur rapport {rapport_id}: {e}")
+                error_logger.error(
+                    f"Erreur application checklist pour {request.user.username} sur rapport {rapport_id}: {e}")
             except Exception as e:
                 messages.error(request, f"Une erreur inattendue est survenue: {e}")
-                error_logger.critical(f"Erreur inattendue application checklist pour {request.user.username} sur rapport {rapport_id}: {e}", exc_info=True)
+                error_logger.critical(
+                    f"Erreur inattendue application checklist pour {request.user.username} sur rapport {rapport_id}: {e}",
+                    exc_info=True)
         else:
             messages.error(request, "Veuillez corriger les erreurs du formulaire.")
     else:
@@ -560,13 +595,15 @@ def conformite_check_report(request, rapport_id):
     }
     return render(request, 'core/personnel/conformite_check_report.html', context)
 
+
 @login_required
 @user_passes_test(is_responsable_scolarite, login_url='dashboard_redirect')
 def scolarite_dashboard(request):
     students_to_activate = Etudiant.objects.filter(est_eligible_soumission=False, utilisateur__is_active=True)
     pending_stages = Stage.objects.filter(est_valide=False)
     pending_penalties = Penalite.objects.filter(statut_penalite=StatutPenalite.DUE)
-    recent_reclamations = Reclamation.objects.filter(statut__in=[StatutReclamation.OUVERTE, StatutReclamation.EN_COURS]).order_by('-date_soumission')[:10]
+    recent_reclamations = Reclamation.objects.filter(
+        statut__in=[StatutReclamation.OUVERTE, StatutReclamation.EN_COURS]).order_by('-date_soumission')[:10]
 
     context = {
         'students_to_activate': students_to_activate,
@@ -575,6 +612,7 @@ def scolarite_dashboard(request):
         'recent_reclamations': recent_reclamations,
     }
     return render(request, 'core/personnel/scolarite_dashboard.html', context)
+
 
 @login_required
 @user_passes_test(is_responsable_scolarite, login_url='dashboard_redirect')
@@ -586,11 +624,15 @@ def scolarite_activate_student_account(request, etudiant_id):
             messages.success(request, f"Le compte de l'étudiant {etudiant.nom_complet} a été activé.")
         except ValueError as e:
             messages.error(request, f"Impossible d'activer le compte : {e}")
-            error_logger.error(f"Erreur activation compte étudiant {etudiant.nom_complet} par {request.user.username}: {e}")
+            error_logger.error(
+                f"Erreur activation compte étudiant {etudiant.nom_complet} par {request.user.username}: {e}")
         except Exception as e:
             messages.error(request, f"Une erreur inattendue est survenue : {e}")
-            error_logger.critical(f"Erreur inattendue activation compte étudiant {etudiant.nom_complet} par {request.user.username}: {e}", exc_info=True)
+            error_logger.critical(
+                f"Erreur inattendue activation compte étudiant {etudiant.nom_complet} par {request.user.username}: {e}",
+                exc_info=True)
     return redirect('scolarite_dashboard')
+
 
 @login_required
 @user_passes_test(is_responsable_scolarite, login_url='dashboard_redirect')
@@ -605,8 +647,10 @@ def scolarite_validate_stage(request, stage_id):
             error_logger.error(f"Erreur validation stage {stage.id} par {request.user.username}: {e}")
         except Exception as e:
             messages.error(request, f"Une erreur inattendue est survenue : {e}")
-            error_logger.critical(f"Erreur inattendue validation stage {stage.id} par {request.user.username}: {e}", exc_info=True)
+            error_logger.critical(f"Erreur inattendue validation stage {stage.id} par {request.user.username}: {e}",
+                                  exc_info=True)
     return redirect('scolarite_dashboard')
+
 
 @login_required
 @user_passes_test(is_responsable_scolarite, login_url='dashboard_redirect')
@@ -617,6 +661,7 @@ def scolarite_manage_penalties(request):
     }
     return render(request, 'core/personnel/scolarite_penalties.html', context)
 
+
 @login_required
 @user_passes_test(is_responsable_scolarite, login_url='dashboard_redirect')
 def scolarite_record_penalty_payment(request, penalty_id):
@@ -624,14 +669,18 @@ def scolarite_record_penalty_payment(request, penalty_id):
     if request.method == 'POST':
         try:
             ScolariteService.record_penalty_payment(penalite, request.user.profil_personnel)
-            messages.success(request, f"La pénalité {penalite.id_penalite} de {penalite.etudiant.nom_complet} a été marquée comme réglée.")
+            messages.success(request,
+                             f"La pénalité {penalite.id_penalite} de {penalite.etudiant.nom_complet} a été marquée comme réglée.")
         except ValueError as e:
             messages.error(request, f"Impossible d'enregistrer le paiement : {e}")
             error_logger.error(f"Erreur enregistrement paiement pénalité {penalty_id} par {request.user.username}: {e}")
         except Exception as e:
             messages.error(request, f"Une erreur inattendue est survenue : {e}")
-            error_logger.critical(f"Erreur inattendue enregistrement paiement pénalité {penalty_id} par {request.user.username}: {e}", exc_info=True)
+            error_logger.critical(
+                f"Erreur inattendue enregistrement paiement pénalité {penalty_id} par {request.user.username}: {e}",
+                exc_info=True)
     return redirect('scolarite_manage_penalties')
+
 
 @login_required
 @user_passes_test(is_responsable_scolarite, login_url='dashboard_redirect')
@@ -655,7 +704,8 @@ def scolarite_manage_notes(request):
                 error_logger.error(f"Erreur enregistrement note par {request.user.username}: {e}")
             except Exception as e:
                 messages.error(request, f"Une erreur inattendue est survenue : {e}")
-                error_logger.critical(f"Erreur inattendue enregistrement note par {request.user.username}: {e}", exc_info=True)
+                error_logger.critical(f"Erreur inattendue enregistrement note par {request.user.username}: {e}",
+                                      exc_info=True)
         else:
             messages.error(request, "Veuillez corriger les erreurs du formulaire.")
     else:
@@ -666,6 +716,7 @@ def scolarite_manage_notes(request):
         'form': form,
     }
     return render(request, 'core/personnel/scolarite_notes.html', context)
+
 
 @login_required
 @user_passes_test(is_responsable_scolarite, login_url='dashboard_redirect')
@@ -683,11 +734,16 @@ def scolarite_generate_document(request):
 
         try:
             if doc_type == 'Bulletin':
-                document = ScolariteService.generate_official_bulletin(etudiant, annee_academique, request.user.profil_personnel)
+                document = ScolariteService.generate_official_bulletin(etudiant, annee_academique,
+                                                                       request.user.profil_personnel)
             elif doc_type == 'AttestationScolarite':
-                document = ScolariteService.generate_administrative_document(etudiant, 'AttestationScolarite', request.user.profil_personnel, annee_academique=annee_academique)
+                document = ScolariteService.generate_administrative_document(etudiant, 'AttestationScolarite',
+                                                                             request.user.profil_personnel,
+                                                                             annee_academique=annee_academique)
             elif doc_type == 'RecuPaiement':
-                document = ScolariteService.generate_administrative_document(etudiant, 'RecuPaiement', request.user.profil_personnel, annee_academique=annee_academique)
+                document = ScolariteService.generate_administrative_document(etudiant, 'RecuPaiement',
+                                                                             request.user.profil_personnel,
+                                                                             annee_academique=annee_academique)
             else:
                 raise ValueError("Type de document non valide.")
 
@@ -698,7 +754,8 @@ def scolarite_generate_document(request):
             error_logger.error(f"Erreur génération document par {request.user.username}: {e}")
         except Exception as e:
             messages.error(request, f"Une erreur inattendue est survenue : {e}")
-            error_logger.critical(f"Erreur inattendue génération document par {request.user.username}: {e}", exc_info=True)
+            error_logger.critical(f"Erreur inattendue génération document par {request.user.username}: {e}",
+                                  exc_info=True)
 
     context = {
         'etudiants': etudiants,
@@ -706,6 +763,7 @@ def scolarite_generate_document(request):
         'document_types': ['Bulletin', 'AttestationScolarite', 'RecuPaiement'],
     }
     return render(request, 'core/personnel/scolarite_generate_document.html', context)
+
 
 @login_required
 @user_passes_test(lambda u: is_responsable_scolarite(u) or is_admin_sys(u), login_url='dashboard_redirect')
@@ -724,7 +782,8 @@ def scolarite_reclamation_detail(request, reclamation_id):
                 return redirect('scolarite_dashboard')
             except Exception as e:
                 messages.error(request, f"Erreur lors de la mise à jour de la réclamation : {e}")
-                error_logger.error(f"Erreur mise à jour réclamation {reclamation_id} par {request.user.username}: {e}", exc_info=True)
+                error_logger.error(f"Erreur mise à jour réclamation {reclamation_id} par {request.user.username}: {e}",
+                                   exc_info=True)
         else:
             messages.error(request, "Veuillez corriger les erreurs du formulaire.")
     else:
@@ -736,6 +795,7 @@ def scolarite_reclamation_detail(request, reclamation_id):
     }
     return render(request, 'core/personnel/reclamation_detail.html', context)
 
+
 # --- Vues Enseignant / Membre de Commission ---
 
 @login_required
@@ -743,15 +803,19 @@ def scolarite_reclamation_detail(request, reclamation_id):
 def enseignant_dashboard(request):
     enseignant_profile = request.user.profil_enseignant
 
-    rapports_directeur = RapportEtudiant.objects.filter(directeur_memoire=enseignant_profile).order_by('-date_soumission')
+    rapports_directeur = RapportEtudiant.objects.filter(directeur_memoire=enseignant_profile).order_by(
+        '-date_soumission')
 
-    sessions_commission = SessionValidation.objects.filter(Q(president_session=enseignant_profile) | Q(membres=enseignant_profile)).distinct().order_by('-date_debut_session')
+    sessions_commission = SessionValidation.objects.filter(
+        Q(president_session=enseignant_profile) | Q(membres=enseignant_profile)).distinct().order_by(
+        '-date_debut_session')
 
     votes_en_attente = []
     if is_membre_commission(request.user):
         for session in sessions_commission.filter(statut_session=StatutSession.EN_COURS):
             for rapport in session.rapports.all():
-                if not VoteCommission.objects.filter(session=session, rapport_etudiant=rapport, enseignant=enseignant_profile).exists():
+                if not VoteCommission.objects.filter(session=session, rapport_etudiant=rapport,
+                                                     enseignant=enseignant_profile).exists():
                     votes_en_attente.append({'session': session, 'rapport': rapport})
 
     context = {
@@ -762,6 +826,7 @@ def enseignant_dashboard(request):
     }
     return render(request, 'core/enseignant/dashboard.html', context)
 
+
 @login_required
 @user_passes_test(is_membre_commission, login_url='dashboard_redirect')
 def commission_session_list(request):
@@ -770,6 +835,7 @@ def commission_session_list(request):
         'sessions': sessions,
     }
     return render(request, 'core/commission/session_list.html', context)
+
 
 @login_required
 @user_passes_test(is_membre_commission, login_url='dashboard_redirect')
@@ -803,7 +869,8 @@ def commission_session_create(request):
                 error_logger.error(f"Permission refusée création session par {request.user.username}: {e}")
             except Exception as e:
                 messages.error(request, f"Une erreur inattendue est survenue : {e}")
-                error_logger.critical(f"Erreur inattendue création session par {request.user.username}: {e}", exc_info=True)
+                error_logger.critical(f"Erreur inattendue création session par {request.user.username}: {e}",
+                                      exc_info=True)
         else:
             messages.error(request, "Veuillez corriger les erreurs du formulaire.")
     else:
@@ -812,6 +879,7 @@ def commission_session_create(request):
         'form': form,
     }
     return render(request, 'core/commission/session_create.html', context)
+
 
 @login_required
 @user_passes_test(is_membre_commission, login_url='dashboard_redirect')
@@ -828,6 +896,7 @@ def commission_session_detail(request, session_id):
         'is_president': session.president_session.utilisateur == request.user,
     }
     return render(request, 'core/commission/session_detail.html', context)
+
 
 @login_required
 @user_passes_test(is_membre_commission, login_url='dashboard_redirect')
@@ -847,12 +916,15 @@ def commission_session_action(request, session_id, action):
             raise Http404("Action non valide.")
     except ValueError as e:
         messages.error(request, f"Erreur : {e}")
-        error_logger.error(f"Erreur action session '{action}' par {request.user.username} sur session {session_id}: {e}")
+        error_logger.error(
+            f"Erreur action session '{action}' par {request.user.username} sur session {session_id}: {e}")
     except Exception as e:
         messages.error(request, f"Une erreur inattendue est survenue : {e}")
-        error_logger.critical(f"Erreur inattendue action session '{action}' par {request.user.username} sur session {session_id}: {e}", exc_info=True)
+        error_logger.critical(f"Erreur inattendue action session '{action}' par {request.user.username}: {e}",
+                              exc_info=True)
 
     return redirect('commission_session_detail', session_id=session.id_session)
+
 
 @login_required
 @user_passes_test(is_membre_commission, login_url='dashboard_redirect')
@@ -880,10 +952,13 @@ def commission_rapport_vote(request, session_id, rapport_id):
                 return redirect('commission_session_detail', session_id=session.id_session)
             except ValueError as e:
                 messages.error(request, f"Erreur lors de l'enregistrement du vote : {e}")
-                error_logger.error(f"Erreur vote par {request.user.username} sur rapport {rapport_id} session {session_id}: {e}")
+                error_logger.error(
+                    f"Erreur vote par {request.user.username} sur rapport {rapport_id} session {session_id}: {e}")
             except Exception as e:
                 messages.error(request, f"Une erreur inattendue est survenue : {e}")
-                error_logger.critical(f"Erreur inattendue vote par {request.user.username} sur rapport {rapport_id} session {session_id}: {e}", exc_info=True)
+                error_logger.critical(
+                    f"Erreur inattendue vote par {request.user.username} sur rapport {rapport_id} session {session_id}: {e}",
+                    exc_info=True)
         else:
             messages.error(request, "Veuillez corriger les erreurs du formulaire.")
     else:
@@ -895,6 +970,7 @@ def commission_rapport_vote(request, session_id, rapport_id):
         'form': form,
     }
     return render(request, 'core/commission/rapport_vote.html', context)
+
 
 @login_required
 @user_passes_test(is_membre_commission, login_url='dashboard_redirect')
@@ -932,10 +1008,13 @@ def commission_pv_manage(request, session_id):
                     return redirect('commission_pv_manage', session_id=session_id)
                 except ValueError as e:
                     messages.error(request, f"Erreur de sauvegarde/soumission du PV : {e}")
-                    error_logger.error(f"Erreur save/submit PV par {request.user.username} sur PV {pv.id_compte_rendu}: {e}")
+                    error_logger.error(
+                        f"Erreur save/submit PV par {request.user.username} sur PV {pv.id_compte_rendu}: {e}")
                 except Exception as e:
                     messages.error(request, f"Une erreur inattendue est survenue : {e}")
-                    error_logger.critical(f"Erreur inattendue save/submit PV par {request.user.username} sur PV {pv.id_compte_rendu}: {e}", exc_info=True)
+                    error_logger.critical(
+                        f"Erreur inattendue save/submit PV par {request.user.username} sur PV {pv.id_compte_rendu}: {e}",
+                        exc_info=True)
             else:
                 messages.error(request, "Veuillez corriger les erreurs du formulaire.")
         else:
@@ -960,6 +1039,7 @@ def commission_pv_manage(request, session_id):
         'is_president': session.president_session.utilisateur == request.user,
     }
     return render(request, 'core/commission/pv_manage.html', context)
+
 
 @login_required
 @user_passes_test(is_membre_commission, login_url='dashboard_redirect')
@@ -988,15 +1068,19 @@ def commission_pv_approve_request(request, pv_id):
                 return redirect('commission_pv_manage', session_id=pv.session.id_session)
             except ValueError as e:
                 messages.error(request, f"Erreur : {e}")
-                error_logger.error(f"Erreur approbation/demande modif PV par {request.user.username} sur PV {pv_id}: {e}")
+                error_logger.error(
+                    f"Erreur approbation/demande modif PV par {request.user.username} sur PV {pv_id}: {e}")
             except Exception as e:
                 messages.error(request, f"Une erreur inattendue est survenue : {e}")
-                error_logger.critical(f"Erreur inattendue approbation/demande modif PV par {request.user.username} sur PV {pv_id}: {e}", exc_info=True)
+                error_logger.critical(
+                    f"Erreur inattendue approbation/demande modif PV par {request.user.username} sur PV {pv_id}: {e}",
+                    exc_info=True)
         else:
             messages.error(request, "Veuillez corriger les erreurs du formulaire.")
     else:
         messages.error(request, "Méthode non autorisée.")
     return redirect('commission_pv_manage', session_id=pv.session.id_session)
+
 
 @login_required
 @user_passes_test(is_membre_commission, login_url='dashboard_redirect')
@@ -1006,13 +1090,15 @@ def commission_pv_finalize(request, pv_id):
         raise PermissionDenied("Seul le président de session ou un administrateur peut finaliser le PV.")
 
     if pv.statut_pv != StatutPV.ATTENTE_APPROBATION:
-        messages.error(request, f"Le PV n'est pas en attente d'approbation et ne peut pas être finalisé (statut actuel: {pv.get_statut_pv_display()}).")
+        messages.error(request,
+                       f"Le PV n'est pas en attente d'approbation et ne peut pas être finalisé (statut actuel: {pv.get_statut_pv_display()}).")
         return redirect('commission_pv_manage', session_id=pv.session.id_session)
 
     required_approvals = pv.session.membres.count() - (1 if pv.redacteur in pv.session.membres.all() else 0)
     current_approvals = pv.validationpv_set.filter(decision_validation_pv=DecisionValidationPV.APPROUVE).count()
     if current_approvals < required_approvals:
-        messages.error(request, f"Impossible de finaliser le PV. {required_approvals - current_approvals} approbation(s) manquante(s).")
+        messages.error(request,
+                       f"Impossible de finaliser le PV. {required_approvals - current_approvals} approbation(s) manquante(s).")
         return redirect('commission_pv_manage', session_id=pv.session.id_session)
 
     if request.method == 'POST':
@@ -1026,6 +1112,7 @@ def commission_pv_finalize(request, pv_id):
             messages.error(request, f"Une erreur inattendue est survenue : {e}")
             error_logger.critical(f"Erreur inattendue finalisation PV par {request.user.username}: {e}", exc_info=True)
     return redirect('commission_pv_manage', session_id=pv.session.id_session)
+
 
 # --- Vues Administrateur Système ---
 
@@ -1045,6 +1132,7 @@ def admin_dashboard(request):
         'system_metrics': system_metrics,
     }
     return render(request, 'core/admin/dashboard.html', context)
+
 
 @login_required
 @user_passes_test(is_admin_sys, login_url='dashboard_redirect')
@@ -1071,7 +1159,8 @@ def admin_user_management(request):
                 error_logger.error(f"Erreur création utilisateur par {request.user.username}: {e}")
             except Exception as e:
                 messages.error(request, f"Une erreur inattendue est survenue : {e}")
-                error_logger.critical(f"Erreur inattendue création utilisateur par {request.user.username}: {e}", exc_info=True)
+                error_logger.critical(f"Erreur inattendue création utilisateur par {request.user.username}: {e}",
+                                      exc_info=True)
         else:
             messages.error(request, "Veuillez corriger les erreurs du formulaire.")
     else:
@@ -1082,6 +1171,7 @@ def admin_user_management(request):
         'form': form,
     }
     return render(request, 'core/admin/user_management.html', context)
+
 
 @login_required
 @user_passes_test(is_admin_sys, login_url='dashboard_redirect')
@@ -1099,7 +1189,9 @@ def admin_user_detail(request, user_id):
                 error_logger.error(f"Erreur assignation rôle par {request.user.username} à {user_obj.username}: {e}")
             except Exception as e:
                 messages.error(request, f"Une erreur inattendue est survenue : {e}")
-                error_logger.critical(f"Erreur inattendue assignation rôle par {request.user.username} à {user_obj.username}: {e}", exc_info=True)
+                error_logger.critical(
+                    f"Erreur inattendue assignation rôle par {request.user.username} à {user_obj.username}: {e}",
+                    exc_info=True)
         elif 'deactivate_account' in request.POST:
             try:
                 AuthentificationService.deactivate_account(user_obj)
@@ -1118,7 +1210,8 @@ def admin_user_detail(request, user_id):
             new_password = User.objects.make_random_password()
             try:
                 AuthentificationService.reset_password(user_obj, new_password)
-                messages.success(request, f"Mot de passe de {user_obj.username} réinitialisé. Nouveau mot de passe: {new_password} (à communiquer en toute sécurité).")
+                messages.success(request,
+                                 f"Mot de passe de {user_obj.username} réinitialisé. Nouveau mot de passe: {new_password} (à communiquer en toute sécurité).")
             except Exception as e:
                 messages.error(request, f"Erreur de réinitialisation de mot de passe : {e}")
                 error_logger.error(f"Erreur reset password {user_obj.username} par {request.user.username}: {e}")
@@ -1131,6 +1224,7 @@ def admin_user_detail(request, user_id):
         'all_groups': Group.objects.all(),
     }
     return render(request, 'core/admin/user_detail.html', context)
+
 
 @login_required
 @user_passes_test(is_admin_sys, login_url='dashboard_redirect')
@@ -1155,7 +1249,8 @@ def admin_delegation_management(request):
                 error_logger.error(f"Erreur création délégation par {request.user.username}: {e}")
             except Exception as e:
                 messages.error(request, f"Une erreur inattendue est survenue : {e}")
-                error_logger.critical(f"Erreur inattendue création délégation par {request.user.username}: {e}", exc_info=True)
+                error_logger.critical(f"Erreur inattendue création délégation par {request.user.username}: {e}",
+                                      exc_info=True)
         else:
             messages.error(request, "Veuillez corriger les erreurs du formulaire.")
     else:
@@ -1166,6 +1261,7 @@ def admin_delegation_management(request):
         'form': form,
     }
     return render(request, 'core/admin/delegation_management.html', context)
+
 
 @login_required
 @user_passes_test(is_admin_sys, login_url='dashboard_redirect')
@@ -1193,7 +1289,8 @@ def admin_import_data(request):
             error_logger.error(f"Erreur importation données par {request.user.username}: {e}")
         except Exception as e:
             messages.error(request, f"Une erreur inattendue est survenue : {e}")
-            error_logger.critical(f"Erreur inattendue importation données par {request.user.username}: {e}", exc_info=True)
+            error_logger.critical(f"Erreur inattendue importation données par {request.user.username}: {e}",
+                                  exc_info=True)
 
         return redirect('admin_import_data')
 
@@ -1201,6 +1298,7 @@ def admin_import_data(request):
         'entity_types': ['Etudiant', 'Enseignant', 'PersonnelAdministratif'],
     }
     return render(request, 'core/admin/import_data.html', context)
+
 
 @login_required
 @user_passes_test(is_admin_sys, login_url='dashboard_redirect')
@@ -1238,6 +1336,7 @@ def admin_audit_logs(request):
     }
     return render(request, 'core/admin/audit_logs.html', context)
 
+
 @login_required
 @user_passes_test(is_admin_sys, login_url='dashboard_redirect')
 def admin_system_health(request):
@@ -1246,6 +1345,7 @@ def admin_system_health(request):
         'metrics': metrics,
     }
     return render(request, 'core/admin/system_health.html', context)
+
 
 @login_required
 @user_passes_test(is_admin_sys, login_url='dashboard_redirect')
@@ -1275,13 +1375,15 @@ def admin_reporting(request):
     }
     return render(request, 'core/admin/reporting.html', context)
 
+
 @login_required
 def download_document(request, doc_id):
     document = get_object_or_404(DocumentOfficiel, id_document=doc_id)
 
     if is_etudiant(request.user) and document.etudiant != request.user.profil_etudiant:
         raise PermissionDenied("Vous n'êtes pas autorisé à télécharger ce document.")
-    elif not is_admin_sys(request.user) and not is_responsable_scolarite(request.user) and not is_membre_commission(request.user) and not is_etudiant(request.user):
+    elif not is_admin_sys(request.user) and not is_responsable_scolarite(request.user) and not is_membre_commission(
+            request.user) and not is_etudiant(request.user):
         raise PermissionDenied("Vous n'êtes pas autorisé à télécharger des documents.")
 
     file_path = os.path.join(settings.MEDIA_ROOT, document.chemin_fichier)

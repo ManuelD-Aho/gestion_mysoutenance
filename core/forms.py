@@ -1,9 +1,9 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, SetPasswordForm
 from django.contrib.auth.models import User, Group, Permission
-# Importation manquante : Enseignant
-from .models import RapportEtudiant, SectionRapport, CritereConformite, Stage, Penalite, Inscription, Note, Ecue, AnneeAcademique, NiveauEtude, Specialite, Entreprise, SessionValidation, ProcesVerbal, Delegation, Reclamation, Etudiant, Enseignant # Ajout de Enseignant
-from .enums import StatutRapport, StatutConformite, DecisionVote, StatutPV, DecisionValidationPV, StatutPaiement, TypePenalite, StatutPenalite, StatutReclamation, ModeSession, StatutSession
+from django.db.models import Q # <-- AJOUTÉ
+from .models import RapportEtudiant, SectionRapport, Stage, Penalite, Inscription, Note, Etudiant, Enseignant, ProcesVerbal, Delegation, Reclamation, SessionValidation # Imports nettoyés
+from .enums import StatutConformite, DecisionVote, DecisionValidationPV # Imports nettoyés
 
 class LoginForm(AuthenticationForm):
     username = forms.CharField(label="Nom d'utilisateur", max_length=150, widget=forms.TextInput(attrs={'class': 'form-control'}))
@@ -107,7 +107,7 @@ class RapportCorrectionForm(forms.Form):
 
 class SessionValidationForm(forms.ModelForm):
     rapports = forms.ModelMultipleChoiceField(
-        queryset=RapportEtudiant.objects.filter(statut_rapport=StatutRapport.CONFORME),
+        queryset=RapportEtudiant.objects.all(), # Queryset plus large, filtré par la vue si nécessaire
         widget=forms.CheckboxSelectMultiple,
         label="Rapports à inclure",
         required=False
@@ -134,6 +134,9 @@ class SessionValidationForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['president_session'].queryset = Enseignant.objects.all()
+        # Filtrer les rapports éligibles (statut CONFORME)
+        self.fields['rapports'].queryset = RapportEtudiant.objects.filter(statut_rapport=StatutRapport.CONFORME)
+
 
 class VoteCommissionForm(forms.Form):
     decision = forms.ChoiceField(

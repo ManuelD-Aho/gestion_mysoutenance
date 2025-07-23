@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Générer des Documents - GestionMySoutenance{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Générer des Documents Administratifs</h1>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Options de Génération</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="id_etudiant" class="form-label">Sélectionner un étudiant</label>
+                <select name="etudiant" id="id_etudiant" class="form-control" required>
+                    <option value="">--- Choisir un étudiant ---</option>
+                    {% for etudiant in etudiants %}
+                        <option value="{{ etudiant.utilisateur.id }}">{{ etudiant.nom_complet }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="id_annee_academique" class="form-label">Sélectionner l'année académique (optionnel)</label>
+                <select name="annee_academique" id="id_annee_academique" class="form-control">
+                    <option value="">--- Toutes les années ---</option>
+                    {% for annee in annees_academiques %}
+                        <option value="{{ annee.id_annee_academique }}">{{ annee.libelle_annee_academique }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="id_document_type" class="form-label">Type de document à générer</label>
+                <select name="document_type" id="id_document_type" class="form-control" required>
+                    <option value="">--- Choisir un type ---</option>
+                    {% for doc_type in document_types %}
+                        <option value="{{ doc_type }}">{{ doc_type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-success"><i class="fas fa-file-pdf"></i> Générer le document</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

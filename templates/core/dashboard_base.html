@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de Bord - GestionMySoutenance{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Tableau de Bord Général</h1>
+
+<div class="alert alert-info" role="alert">
+    <h4 class="alert-heading">Bienvenue sur GestionMySoutenance !</h4>
+    <p>Votre rôle ne vous donne pas accès à un tableau de bord spécifique. Veuillez contacter l'administrateur si vous pensez qu'il s'agit d'une erreur.</p>
+    <hr>
+    <p class="mb-0">Vous pouvez toujours accéder à votre <a href="{% url 'user_profile' %}" class="alert-link">profil</a>.</p>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <i class="fas fa-info-circle fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Informations Générales</h5>
+                <p class="card-text">Consultez les annonces et les informations importantes de l'établissement.</p>
+                <a href="#" class="btn btn-primary disabled">Voir les annonces</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <i class="fas fa-question-circle fa-3x text-secondary mb-3"></i>
+                <h5 class="card-title">Aide et Support</h5>
+                <p class="card-text">Trouvez des réponses à vos questions ou contactez le support.</p>
+                <a href="#" class="btn btn-secondary disabled">Accéder à l'aide</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Accès Rapide</h5>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><a href="{% url 'user_profile' %}">Mon Profil</a></li>
+                <li class="list-group-item"><a href="{% url 'logout' %}">Déconnexion</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
