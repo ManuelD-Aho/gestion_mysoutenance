@@ -1,48 +1,360 @@
 {% extends 'base.html' %}
 
-{% block title %}Tableau de Bord - GestionMySoutenance{% endblock %}
+{% load static %}
+{% load core_auth_tags %}
+
+{% block extra_head %}
+    <style>
+        /* Styles pour la mise en page du tableau de bord */
+        body {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+            background-color: #f8f9fa; /* Couleur de fond légère */
+        }
+        #wrapper {
+            display: flex;
+            flex: 1;
+        }
+        #sidebar-wrapper {
+            min-width: 250px;
+            max-width: 250px;
+            background-color: #343a40; /* Couleur sombre pour la sidebar */
+            color: #ffffff;
+            transition: margin .25s ease-out;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            padding-top: 20px; /* Espace pour le logo/titre */
+        }
+        #sidebar-wrapper .sidebar-heading {
+            padding: 0.875rem 1.25rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffffff;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 15px;
+        }
+        #sidebar-wrapper .list-group {
+            width: 100%;
+        }
+        #sidebar-wrapper .list-group-item {
+            background-color: transparent;
+            color: rgba(255,255,255,0.7);
+            border: none;
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+        #sidebar-wrapper .list-group-item:hover {
+            background-color: rgba(255,255,255,0.1);
+            color: #ffffff;
+        }
+        #sidebar-wrapper .list-group-item.active {
+            background-color: #007bff; /* Couleur d'accent pour l'élément actif */
+            color: #ffffff;
+            border-radius: 5px;
+        }
+        #sidebar-wrapper .list-group-item i {
+            margin-right: 10px;
+            width: 20px; /* Pour aligner les icônes */
+            text-align: center;
+        }
+        #sidebar-wrapper .list-group-item.menu-header {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.4);
+            padding: 15px 20px 5px 20px;
+            font-weight: bold;
+        }
+        #sidebar-wrapper .list-group-item.menu-item-has-children {
+            padding-right: 10px; /* Espace pour la flèche */
+        }
+        #sidebar-wrapper .list-group-item.menu-item-has-children .float-end {
+            transition: transform 0.3s ease;
+        }
+        #sidebar-wrapper .list-group-item.menu-item-has-children[aria-expanded="true"] .float-end {
+            transform: rotate(90deg);
+        }
+        #sidebar-wrapper .list-group-item a {
+            color: inherit;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+        }
+        #sidebar-wrapper .list-group-item ul {
+            list-style: none;
+            padding-left: 0;
+            margin-top: 5px;
+            margin-bottom: 0;
+        }
+        #sidebar-wrapper .list-group-item ul li a {
+            padding: 8px 20px 8px 40px; /* Indentation pour les sous-menus */
+            display: block;
+            color: rgba(255,255,255,0.6);
+        }
+        #sidebar-wrapper .list-group-item ul li a:hover {
+            background-color: rgba(255,255,255,0.05);
+            color: #ffffff;
+        }
+
+        #page-content-wrapper {
+            width: 100%;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .navbar-top {
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar-top .user-info {
+            display: flex;
+            align-items: center;
+        }
+        .navbar-top .user-info img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid #007bff;
+        }
+        .navbar-top .user-info .dropdown-toggle::after {
+            display: none; /* Supprime la flèche par défaut de Bootstrap */
+        }
+        .navbar-top .user-info .dropdown-menu {
+            left: auto;
+            right: 0;
+        }
+        .navbar-top .search-bar {
+            flex-grow: 1;
+            margin: 0 20px;
+        }
+        .navbar-top .search-bar .form-control {
+            border-radius: 20px;
+        }
+        .navbar-top .notifications {
+            display: flex;
+            align-items: center;
+        }
+        .navbar-top .notifications .nav-link {
+            position: relative;
+            color: #343a40;
+            margin-left: 15px;
+        }
+        .navbar-top .notifications .badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            padding: .4em .6em;
+            border-radius: 50%;
+            font-size: 0.7em;
+        }
+        .navbar-top .notifications .dropdown-menu {
+            min-width: 250px;
+            right: 0;
+            left: auto;
+        }
+        .navbar-top .notifications .dropdown-item {
+            white-space: normal;
+        }
+
+        /* Masquer la navbar de base quand on est sur le dashboard */
+        body > nav.navbar {
+            display: none;
+        }
+        /* Ajuster le footer pour qu'il soit toujours en bas */
+        footer.footer {
+            margin-top: auto; /* Pousse le footer vers le bas */
+        }
+    </style>
+{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Tableau de Bord Général</h1>
+    <div id="wrapper">
+        <!-- Sidebar -->
+        <div id="sidebar-wrapper">
+            <div class="sidebar-heading">GestionMySoutenance</div>
+            <div class="list-group list-group-flush">
+                {% if user.is_authenticated %}
+                    {# Profil utilisateur dans la sidebar (comme dans l'image) #}
+                    <div class="sidebar-profile text-center py-3 border-bottom mb-3">
+                        <img src="{% static 'images/default_avatar.png' %}" alt="User Avatar" class="img-fluid rounded-circle mb-2" style="width: 70px; height: 70px; border: 2px solid #007bff;">
+                        <h6 class="text-white mb-0">{{ user.first_name }} {{ user.last_name }}</h6>
+                        <small class="text-muted">{{ user.groups.first.name|default:"Aucun rôle" }}</small>
+                    </div>
 
-<div class="alert alert-info" role="alert">
-    <h4 class="alert-heading">Bienvenue sur GestionMySoutenance !</h4>
-    <p>Votre rôle ne vous donne pas accès à un tableau de bord spécifique. Veuillez contacter l'administrateur si vous pensez qu'il s'agit d'une erreur.</p>
-    <hr>
-    <p class="mb-0">Vous pouvez toujours accéder à votre <a href="{% url 'user_profile' %}" class="alert-link">profil</a>.</p>
-</div>
+                    {# Liens de navigation spécifiques au rôle #}
+                    {% if user|has_group:'Administrateur Système' %}
+                        <div class="menu-header">Administration</div>
+                        <a href="{% url 'admin_dashboard' %}" class="list-group-item list-group-item-action {% if request.path == '/admin_sys/dashboard/' %}active{% endif %}"><i class="fas fa-tachometer-alt"></i> Tableau de Bord</a>
+                        <a class="list-group-item list-group-item-action menu-item-has-children" data-bs-toggle="collapse" href="#userManagementSubmenu" role="button" aria-expanded="{% if 'admin_sys/users' in request.path or 'admin_sys/delegations' in request.path %}true{% else %}false{% endif %}" aria-controls="userManagementSubmenu">
+                            <i class="fas fa-users"></i> Gestion des Utilisateurs <i class="fas fa-chevron-down float-end"></i>
+                        </a>
+                        <div class="collapse {% if 'admin_sys/users' in request.path or 'admin_sys/delegations' in request.path %}show{% endif %}" id="userManagementSubmenu">
+                            <ul class="list-group list-group-flush">
+                                <li><a href="{% url 'admin_user_management' %}" class="list-group-item {% if 'admin_sys/users' in request.path and 'delegations' not in request.path %}active{% endif %}">Utilisateurs</a></li>
+                                <li><a href="{% url 'admin_delegation_management' %}" class="list-group-item {% if 'admin_sys/delegations' in request.path %}active{% endif %}">Délégations</a></li>
+                            </ul>
+                        </div>
+                        <a class="list-group-item list-group-item-action menu-item-has-children" data-bs-toggle="collapse" href="#systemToolsSubmenu" role="button" aria-expanded="{% if 'admin_sys/import' in request.path or 'admin_sys/logs' in request.path or 'admin_sys/health' in request.path %}true{% else %}false{% endif %}" aria-controls="systemToolsSubmenu">
+                            <i class="fas fa-tools"></i> Outils Système <i class="fas fa-chevron-down float-end"></i>
+                        </a>
+                        <div class="collapse {% if 'admin_sys/import' in request.path or 'admin_sys/logs' in request.path or 'admin_sys/health' in request.path %}show{% endif %}" id="systemToolsSubmenu">
+                            <ul class="list-group list-group-flush">
+                                <li><a href="{% url 'admin_import_data' %}" class="list-group-item {% if 'admin_sys/import' in request.path %}active{% endif %}">Importation de Données</a></li>
+                                <li><a href="{% url 'admin_audit_logs' %}" class="list-group-item {% if 'admin_sys/logs' in request.path %}active{% endif %}">Journaux d'Audit</a></li>
+                                <li><a href="{% url 'admin_system_health' %}" class="list-group-item {% if 'admin_sys/health' in request.path %}active{% endif %}">Santé du Système</a></li>
+                            </ul>
+                        </div>
+                        <a href="{% url 'admin_reporting' %}" class="list-group-item list-group-item-action {% if 'admin_sys/reporting' in request.path %}active{% endif %}"><i class="fas fa-chart-pie"></i> Rapports & Stats</a>
 
-<div class="row mt-4">
-    <div class="col-md-4">
-        <div class="card text-center shadow-sm">
-            <div class="card-body">
-                <i class="fas fa-info-circle fa-3x text-primary mb-3"></i>
-                <h5 class="card-title">Informations Générales</h5>
-                <p class="card-text">Consultez les annonces et les informations importantes de l'établissement.</p>
-                <a href="#" class="btn btn-primary disabled">Voir les annonces</a>
+                    {% elif user|has_group:'Étudiant' %}
+                        <div class="menu-header">Mon Espace</div>
+                        <a href="{% url 'etudiant_dashboard' %}" class="list-group-item list-group-item-action {% if request.path == '/etudiant/dashboard/' %}active{% endif %}"><i class="fas fa-tachometer-alt"></i> Mon Tableau de Bord</a>
+                        <a class="list-group-item list-group-item-action menu-item-has-children" data-bs-toggle="collapse" href="#rapportsSubmenu" role="button" aria-expanded="{% if 'etudiant/rapports' in request.path %}true{% else %}false{% endif %}" aria-controls="rapportsSubmenu">
+                            <i class="fas fa-file-alt"></i> Mes Rapports <i class="fas fa-chevron-down float-end"></i>
+                        </a>
+                        <div class="collapse {% if 'etudiant/rapports' in request.path %}show{% endif %}" id="rapportsSubmenu">
+                            <ul class="list-group list-group-flush">
+                                <li><a href="{% url 'rapport_create' %}" class="list-group-item {% if 'rapports/creer' in request.path %}active{% endif %}">Soumettre un Rapport</a></li>
+                                <li><a href="{% url 'etudiant_dashboard' %}" class="list-group-item {% if 'rapports/suivi' in request.path %}active{% endif %}">Suivi de mes Rapports</a></li> {# Redirige vers le dashboard pour l'instant, à affiner #}
+                            </ul>
+                        </div>
+                        <a href="{% url 'etudiant_documents' %}" class="list-group-item list-group-item-action {% if 'etudiant/documents' in request.path %}active{% endif %}"><i class="fas fa-file-pdf"></i> Mes Documents</a>
+                        <a href="{% url 'etudiant_reclamations' %}" class="list-group-item list-group-item-action {% if 'etudiant/reclamations' in request.path %}active{% endif %}"><i class="fas fa-headset"></i> Mes Réclamations</a>
+
+                    {% elif user|has_group:'Responsable Scolarité' or user|has_group:'Agent de Conformité' %}
+                        <div class="menu-header">Personnel Administratif</div>
+                        <a href="{% url 'personnel_dashboard' %}" class="list-group-item list-group-item-action {% if request.path == '/personnel/dashboard/' %}active{% endif %}"><i class="fas fa-tachometer-alt"></i> Tableau de Bord Général</a>
+
+                        {% if user|has_group:'Responsable Scolarité' %}
+                            <a class="list-group-item list-group-item-action menu-item-has-children" data-bs-toggle="collapse" href="#scolariteSubmenu" role="button" aria-expanded="{% if 'scolarite' in request.path %}true{% else %}false{% endif %}" aria-controls="scolariteSubmenu">
+                                <i class="fas fa-graduation-cap"></i> Gestion Scolarité <i class="fas fa-chevron-down float-end"></i>
+                            </a>
+                            <div class="collapse {% if 'scolarite' in request.path %}show{% endif %}" id="scolariteSubmenu">
+                                <ul class="list-group list-group-flush">
+                                    <li><a href="{% url 'scolarite_dashboard' %}" class="list-group-item {% if request.path == '/personnel/scolarite/dashboard/' %}active{% endif %}">Dashboard Scolarité</a></li>
+                                    <li><a href="{% url 'scolarite_manage_notes' %}" class="list-group-item {% if 'scolarite/notes' in request.path %}active{% endif %}">Gestion Notes</a></li>
+                                    <li><a href="{% url 'scolarite_manage_penalties' %}" class="list-group-item {% if 'scolarite/penalites' in request.path %}active{% endif %}">Gestion Pénalités</a></li>
+                                    <li><a href="{% url 'scolarite_generate_document' %}" class="list-group-item {% if 'scolarite/documents/generer' in request.path %}active{% endif %}">Générer Documents</a></li>
+                                    <li><a href="{% url 'scolarite_dashboard' %}" class="list-group-item {% if 'reclamations' in request.path %}active{% endif %}">Gestion Réclamations</a> {# Redirige vers le dashboard pour l'instant, à affiner #}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        {% if user|has_group:'Agent de Conformité' %}
+                            <a href="{% url 'conformite_dashboard' %}" class="list-group-item list-group-item-action {% if 'conformite' in request.path %}active{% endif %}"><i class="fas fa-check-double"></i> Conformité Rapports</a>
+                        {% endif %}
+
+                    {% elif user|has_group:'Membre de Commission' or user|has_group:'Enseignant' %}
+                        <div class="menu-header">Enseignant / Commission</div>
+                        <a href="{% url 'enseignant_dashboard' %}" class="list-group-item list-group-item-action {% if request.path == '/enseignant/dashboard/' %}active{% endif %}"><i class="fas fa-tachometer-alt"></i> Mon Tableau de Bord</a>
+                        <a class="list-group-item list-group-item-action menu-item-has-children" data-bs-toggle="collapse" href="#commissionSubmenu" role="button" aria-expanded="{% if 'commission/sessions' in request.path or 'commission/pv' in request.path %}true{% else %}false{% endif %}" aria-controls="commissionSubmenu">
+                            <i class="fas fa-gavel"></i> Sessions Commission <i class="fas fa-chevron-down float-end"></i>
+                        </a>
+                        <div class="collapse {% if 'commission/sessions' in request.path or 'commission/pv' in request.path %}show{% endif %}" id="commissionSubmenu">
+                            <ul class="list-group list-group-flush">
+                                <li><a href="{% url 'commission_session_list' %}" class="list-group-item {% if 'commission/sessions' in request.path and 'creer' not in request.path %}active{% endif %}">Liste des Sessions</a></li>
+                                {% if user|has_group:'Membre de Commission' %} {# Ou si président #}
+                                    <li><a href="{% url 'commission_session_create' %}" class="list-group-item {% if 'commission/sessions/creer' in request.path %}active{% endif %}">Créer une Session</a></li>
+                                {% endif %}
+                                <li><a href="{% url 'enseignant_dashboard' %}" class="list-group-item">Rapports à Évaluer</a></li> {# Redirige vers le dashboard pour l'instant, à affiner #}
+                            </ul>
+                        </div>
+                        <a href="{% url 'enseignant_dashboard' %}" class="list-group-item list-group-item-action"><i class="fas fa-file-alt"></i> Mes Rapports dirigés</a>
+
+                    {% else %}
+                        {# Si l'utilisateur est authentifié mais n'a pas de rôle spécifique #}
+                        <div class="menu-header">Navigation</div>
+                        <a href="{% url 'dashboard_redirect' %}" class="list-group-item list-group-item-action active"><i class="fas fa-home"></i> Tableau de Bord</a>
+                    {% endif %}
+
+                    <div class="menu-header">Mon Compte</div>
+                    <a href="{% url 'user_profile' %}" class="list-group-item list-group-item-action {% if request.path == '/profile/' %}active{% endif %}"><i class="fas fa-user-circle"></i> Mon Profil</a>
+                    <a href="{% url 'logout' %}" class="list-group-item list-group-item-action"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="list-group-item list-group-item-action"><i class="fas fa-sign-in-alt"></i> Connexion</a>
+                {% endif %}
             </div>
         </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card text-center shadow-sm">
-            <div class="card-body">
-                <i class="fas fa-question-circle fa-3x text-secondary mb-3"></i>
-                <h5 class="card-title">Aide et Support</h5>
-                <p class="card-text">Trouvez des réponses à vos questions ou contactez le support.</p>
-                <a href="#" class="btn btn-secondary disabled">Accéder à l'aide</a>
+        <!-- /#sidebar-wrapper -->
+
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+            <nav class="navbar-top">
+                <div class="search-bar">
+                    <input type="text" class="form-control" placeholder="Rechercher...">
+                </div>
+                <div class="notifications">
+                    <a class="nav-link" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-bell fa-lg"></i>
+                        {% if user.notifications.filter(est_lue=False).count > 0 %}
+                            <span class="badge bg-danger">{{ user.notifications.filter(est_lue=False).count }}</span>
+                        {% endif %}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        {% if user.notifications.filter(est_lue=False).count > 0 %}
+                            {% for notification in user.notifications.filter(est_lue=False)[:5] %}
+                                <li><a class="dropdown-item" href="{{ notification.lien_action|default:'#' }}">{{ notification.message|truncatechars:80 }} <small class="text-muted d-block">{{ notification.date_creation|date:"H:i" }}</small></a></li>
+                            {% endfor %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-center" href="#">Voir toutes les notifications</a></li>
+                        {% else %}
+                            <li><span class="dropdown-item text-muted">Aucune nouvelle notification</span></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </nav>
+
+            <div class="container-fluid">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% block dashboard_content %}
+                    <!-- Le contenu spécifique de chaque tableau de bord ira ici -->
+                {% endblock %}
             </div>
         </div>
+        <!-- /#page-content-wrapper -->
     </div>
-    <div class="col-md-4">
-        <div class="card text-center shadow-sm">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">Accès Rapide</h5>
-            </div>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item"><a href="{% url 'user_profile' %}">Mon Profil</a></li>
-                <li class="list-group-item"><a href="{% url 'logout' %}">Déconnexion</a></li>
-            </ul>
-        </div>
-    </div>
-</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // Script pour gérer l'état actif des liens de la sidebar
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('#sidebar-wrapper .list-group-item').forEach(item => {
+                const link = item.querySelector('a');
+                if (link && link.getAttribute('href') === currentPath) {
+                    item.classList.add('active');
+                }
+            });
+
+            // Pour les sous-menus, si un sous-lien est actif, le parent doit être "show"
+            document.querySelectorAll('#sidebar-wrapper .collapse ul li a').forEach(subLink => {
+                if (subLink.getAttribute('href') === currentPath) {
+                    subLink.classList.add('active');
+                    const parentCollapse = subLink.closest('.collapse');
+                    if (parentCollapse) {
+                        parentCollapse.classList.add('show');
+                        const parentMenuItem = parentCollapse.previousElementSibling;
+                        if (parentMenuItem && parentMenuItem.classList.contains('menu-item-has-children')) {
+                            parentMenuItem.setAttribute('aria-expanded', 'true');
+                        }
+                    }
+                }
+            });
+        });
+    </script>
 {% endblock %}

@@ -9,6 +9,7 @@ from django.http import HttpResponse, Http404  # Gardé HttpResponse, Http404
 # from django.template.loader import render_to_string # Déjà importé dans services, mais peut être utile ici si des rendus directs sont faits
 from django.db import transaction
 from django.conf import settings
+from django.db.models import Q 
 from django.core.exceptions import PermissionDenied
 import datetime
 # import json # Supprimé car non utilisé
@@ -33,7 +34,7 @@ from .models import (
     Etudiant, Enseignant, PersonnelAdministratif, RapportEtudiant, SectionRapport,
     CritereConformite, SessionValidation, ProcesVerbal, Penalite, Notification,
     Reclamation, Delegation, DocumentOfficiel, Stage, Inscription, Note, Ecue,
-    AnneeAcademique
+    AnneeAcademique, Specialite
 )
 from .enums import (
     StatutRapport, StatutPenalite, StatutPV, DecisionValidationPV, StatutReclamation, StatutSession  # Imports nettoyés
@@ -1324,7 +1325,7 @@ def admin_audit_logs(request):
         except ValueError:
             messages.error(request, "Format de date de fin invalide (YYYY-MM-DD).")
 
-    logs = ReportingService.get_audit_logs(filters)
+    logs = AdminService.get_audit_logs(filters)
     users = User.objects.all().order_by('username')
     event_types = Notification.objects.values_list('type_notification', flat=True).distinct()
 

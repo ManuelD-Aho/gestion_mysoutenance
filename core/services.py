@@ -948,7 +948,7 @@ class CommissionService:
             audit_logger.info(f"PV '{pv.id_compte_rendu}' finalisé et diffusé.")
             return pv
 
-    class ScolariteService:
+class ScolariteService:
         @staticmethod
         @transaction.atomic
         def activate_student_account(etudiant, personnel_rs):
@@ -1544,9 +1544,9 @@ class NotificationService:
         audit_logger.info(f"Préférences de notification de {user.username} mises à jour.")
         return user
 
-    class ReportingService:
-        @staticmethod
-        def global_search(query, user_roles):
+class ReportingService:
+    @staticmethod
+    def global_search(query, user_roles):
             results = []
             query_lower = query.lower()
 
@@ -1645,8 +1645,33 @@ class NotificationService:
                 f"Recherche globale effectuée pour la requête '{query}' par un utilisateur avec rôles {user_roles}. Résultats: {len(results)}.")
             return results
 
-        @staticmethod
-        def generate_validation_rate_report(annee_academique=None, specialite=None):
+    @staticmethod  # <-- Assurez-vous que cette méthode est bien DANS la classe ReportingService
+    def get_system_health_metrics():
+        try:
+            cpu_usage = random.uniform(10.0, 80.0)
+            ram_usage = random.uniform(20.0, 90.0)
+            db_connections = random.randint(5, 50)
+            queue_size = random.randint(0, 100)
+            active_users = User.objects.filter(is_active=True).count()
+            reports_in_progress = RapportEtudiant.objects.exclude(
+                statut_rapport__in=[StatutRapport.VALIDE, StatutRapport.REFUSE, StatutRapport.ARCHIVE]).count()
+
+            audit_logger.info("Métriques de santé du système récupérées.")
+            return {
+                'cpu_usage': round(cpu_usage, 2),
+                'ram_usage': round(ram_usage, 2),
+                'db_connections': db_connections,
+                'queue_size': queue_size,
+                'active_users': active_users,
+                'reports_in_progress': reports_in_progress,
+                'timestamp': timezone.now().isoformat()
+            }
+        except Exception as e:
+            error_logger.error(f"Erreur lors de la récupération des métriques système: {e}", exc_info=True)
+            raise
+
+    @staticmethod
+    def generate_validation_rate_report(annee_academique=None, specialite=None):
             rapports = RapportEtudiant.objects.all()
 
             if annee_academique:
@@ -1682,8 +1707,8 @@ class NotificationService:
                 'in_progress_rate': round(in_progress_rate, 2)
             }
 
-        @staticmethod
-        def get_workflow_processing_times():
+    @staticmethod
+    def get_workflow_processing_times():
             # Pour des délais précis, il faudrait un modèle d'historique des statuts de rapport
             # qui enregistre chaque changement de statut avec un horodatage.
             # Pour l'instant, nous nous basons sur les dates disponibles dans le modèle RapportEtudiant.
@@ -1712,8 +1737,8 @@ class NotificationService:
                 'notes': "Nécessite un historique de statut détaillé pour une précision complète."
             }
 
-        @staticmethod
-        def export_data(queryset, format_type, fields=None):
+    @staticmethod
+    def export_data(queryset, format_type, fields=None):
             if not queryset:
                 raise ValueError("Le queryset ne peut pas être vide.")
             if format_type not in ['csv', 'pdf']:

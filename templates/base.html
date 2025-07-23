@@ -6,7 +6,7 @@
     <title>{% block title %}GestionMySoutenance{% endblock %}</title>
     
     {% load static %}
-    {% load core_auth_tags %} {# <-- AJOUTEZ CETTE LIGNE POUR CHARGER VOTRE CUSTOM TAG #}
+    {% load core_auth_tags %}
 
     <!-- Bootstrap CSS (via CDN ou localement) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
@@ -18,6 +18,8 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body>
+    {# La navbar principale sera supprimée ou simplifiée si le dashboard_base prend le relais #}
+    {# Pour l'instant, je la laisse pour les pages hors dashboard (login, etc.) #}
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'dashboard_redirect' %}">GestionMySoutenance</a>
@@ -26,58 +28,8 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <!-- Liens de navigation spécifiques au rôle -->
-                    {% if user.is_authenticated %}
-                        {# Utilisez le custom filter has_group #}
-                        {% if user|has_group:'Étudiant' %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'etudiant_dashboard' %}">Mon Tableau de Bord</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'rapport_create' %}">Soumettre Rapport</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'etudiant_documents' %}">Mes Documents</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'etudiant_reclamations' %}">Mes Réclamations</a>
-                            </li>
-                        {% elif user|has_group:'Responsable Scolarité' or user|has_group:'Agent de Conformité' %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'personnel_dashboard' %}">Tableau de Bord Personnel</a>
-                            </li>
-                            {% if user|has_group:'Responsable Scolarité' %}
-                                <li class="nav-item">
-                                    <a class="nav-link" href="{% url 'scolarite_manage_notes' %}">Gestion Notes</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="{% url 'scolarite_generate_document' %}">Générer Docs</a>
-                                </li>
-                            {% endif %}
-                            {% if user|has_group:'Agent de Conformité' %}
-                                <li class="nav-item">
-                                    <a class="nav-link" href="{% url 'conformite_dashboard' %}">Conformité Rapports</a>
-                                </li>
-                            {% endif %}
-                        {% elif user|has_group:'Membre de Commission' or user|has_group:'Enseignant' %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'enseignant_dashboard' %}">Tableau de Bord Enseignant</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'commission_session_list' %}">Sessions Commission</a>
-                            </li>
-                        {% elif user|has_group:'Administrateur Système' %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'admin_dashboard' %}">Tableau de Bord Admin</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'admin_user_management' %}">Gestion Utilisateurs</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'admin_reporting' %}">Rapports & Stats</a>
-                            </li>
-                        {% endif %}
-                    {% endif %}
+                    <!-- Liens de navigation spécifiques au rôle (seront déplacés dans la sidebar) -->
+                    {# Ces liens seront gérés par dashboard_base.html #}
                 </ul>
                 <ul class="navbar-nav ms-auto">
                     {% if user.is_authenticated %}
@@ -101,6 +53,7 @@
         </div>
     </nav>
 
+    {# Le container principal sera géré par dashboard_base.html #}
     <div class="container mt-4">
         {% if messages %}
             {% for message in messages %}

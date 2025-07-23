@@ -42,20 +42,29 @@
                         <div class="mb-4 p-3 border rounded">
                             <h6 class="mb-2">{{ critere.libelle_critere }}</h6>
                             <p class="text-muted small">{{ critere.description }}</p>
-                            <div class="mb-2">
-                                <label for="id_critere_{{ critere.id_critere }}_statut" class="form-label">Statut</label>
-                                {{ form.fields|get_item:("critere_"|add:critere.id_critere|add:"_statut") }}
-                                {% for error in form.fields|get_item:("critere_"|add:critere.id_critere|add:"_statut").errors %}
-                                    <div class="invalid-feedback d-block">{{ error }}</div>
-                                {% endfor %}
-                            </div>
-                            <div>
-                                <label for="id_critere_{{ critere.id_critere }}_commentaire" class="form-label">Commentaire</label>
-                                {{ form.fields|get_item:("critere_"|add:critere.id_critere|add:"_commentaire") }}
-                                {% for error in form.fields|get_item:("critere_"|add:critere.id_critere|add:"_commentaire").errors %}
-                                    <div class="invalid-feedback d-block">{{ error }}</div>
-                                {% endfor %}
-                            </div>
+                            {% with status_field_name="critere_"|add:critere.id_critere|add:"_statut" %}
+{% with status_field=form|get_item:status_field_name %}
+    <div class="mb-2">
+        <label for="{{ status_field.id_for_label }}" class="form-label">Statut</label>
+        {{ status_field }}
+        {% for error in status_field.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+    </div>
+{% endwith %}
+{% endwith %}
+
+{% with comment_field_name="critere_"|add:critere.id_critere|add:"_commentaire" %}
+{% with comment_field=form|get_item:comment_field_name %}
+    <div>
+        <label for="{{ comment_field.id_for_label }}" class="form-label">Commentaire</label>
+        {{ comment_field }}
+        {% for error in comment_field.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+    </div>
+{% endwith %}
+{% endwith %}
                         </div>
                     {% endfor %}
                     <div class="d-grid gap-2 mt-4">
