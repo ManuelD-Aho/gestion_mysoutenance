@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}Suivi du Rapport - GestionMySoutenance{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Suivi de mon Rapport : "{{ rapport.libelle_rapport_etudiant }}"</h1>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Informations Générales</h5>
+    </div>
+    <div class="card-body">
+        <p><strong>Thème :</strong> {{ rapport.theme }}</p>
+        <p><strong>Stage associé :</strong> {{ rapport.stage.sujet_stage }} ({{ rapport.stage.entreprise.libelle_entreprise }})</p>
+        <p><strong>Date de soumission :</strong> {{ rapport.date_soumission|date:"d M Y H:i" }}</p>
+        <p><strong>Statut actuel :</strong> 
+            <span class="badge bg-{% if rapport.statut_rapport == 'RAP_VALID' %}success{% elif rapport.statut_rapport == 'RAP_REFUSE' %}danger{% elif rapport.statut_rapport == 'RAP_NON_CONF' %}warning{% else %}info{% endif %} fs-6">
+                {{ rapport.get_statut_rapport_display }}
+            </span>
+        </p>
+        {% if rapport.directeur_memoire %}
+            <p><strong>Directeur de mémoire :</strong> {{ rapport.directeur_memoire.nom_complet }}</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">Parcours de Validation</h5>
+    </div>
+    <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex align-items-center">
+                <i class="fas fa-check-circle text-success me-3"></i>
+                <div>
+                    <strong>Rapport initialisé</strong>
+                    <br><small class="text-muted">Créé le {{ rapport.date_soumission|date:"d M Y" }}</small>
+                </div>
+            </li>
+            <li class="list-group-item d-flex align-items-center">
+                {% if rapport.statut_rapport == 'RAP_SOUMIS' or rapport.statut_rapport == 'RAP_NON_CONF' or rapport.statut_rapport == 'RAP_CONF' or rapport.statut_rapport == 'RAP_EN_COMMISSION' or rapport.statut_rapport == 'RAP_VALID' or rapport.statut_rapport == 'RAP_REFUSE' %}
+                    <i class="fas fa-check-circle text-success me-3"></i>
+                {% else %}
+                    <i class="fas fa-circle text-muted me-3"></i>
+                {% endif %}
+                <div>
+                    <strong>Soumission du rapport</strong>
+                    <br><small class="text-muted">Soumis le {{ rapport.date_soumission|date:"d M Y H:i" }}</small>
+                </div>
+            </li>
+            <li class="list-group-item d-flex align-items-center">
+                {% if rapport.statut_rapport == 'RAP_CONF' or rapport.statut_rapport == 'RAP_EN_COMMISSION' or rapport.statut_rapport == 'RAP_VALID' or rapport.statut_rapport == 'RAP_REFUSE' %}
+                    <i class="fas fa-check-circle text-success me-3"></i>
+                {% elif rapport.statut_rapport == 'RAP_NON_CONF' %}
+                    <i class="fas fa-exclamation-triangle text-warning me-3"></i>
+                {% else %}
+                    <i class="fas fa-circle text-muted me-3"></i>
+                {% endif %}
+                <div>
+                    <strong>Contrôle de Conformité Administratif</strong>
+                    {% if rapport.statut_rapport == 'RAP_CONF' %}
+                        <br><small class="text-success">Conforme</small>
+                    {% elif rapport.statut_rapport == 'RAP_NON_CONF' %}
+                        <br><small class="text-danger">Non Conforme. <a href="{% url 'rapport_edit' rapport_id=rapport.id_rapport_etudiant %}">Modifier le rapport</a></small>
+                    {% else %}
+                        <br><small class="text-muted">En attente</small>
+                    {% endif %}
+                </div>
+            </li>
+            <li class="list-group-item d-flex align-items-center">
+                {% if rapport.statut_rapport == 'RAP_EN_COMMISSION' or rapport.statut_rapport == 'RAP_VALID' or rapport.statut_rapport == 'RAP_REFUSE' %}
+                    <i class="fas fa-spinner fa-spin text-info me-3"></i>
+                {% else %}
+                    <i class="fas fa-circle text-muted me-3"></i>
+                {% endif %}
+                <div>
+                    <strong>Évaluation par la Commission de Validation</strong>
+                    {% if rapport.statut_rapport == 'RAP_EN_COMMISSION' %}
+                        <br><small class="text-info">En cours d'évaluation</small>
+                    {% elif rapport.statut_rapport == 'RAP_VALID' %}
+                        <br><small class="text-success">Validé !</small>
+                    {% elif rapport.statut_rapport == 'RAP_REFUSE' %}
+                        <br><small class="text-danger">Refusé.</small>
+                    {% else %}
+                        <br><small class="text-muted">En attente</small>
+                    {% endif %}
+                </div>
+            </li>
+            <li class="list-group-item d-flex align-items-center">
+                {% if rapport.statut_rapport == 'RAP_VALID' %}
+                    <i class="fas fa-check-double text-success me-3"></i>
+                {% elif rapport.statut_rapport == 'RAP_REFUSE' %}
+                    <i class="fas fa-times-circle text-danger me-3"></i>
+                {% else %}
+                    <i class="fas fa-circle text-muted me-3"></i>
+                {% endif %}
+                <div>
+                    <strong>Décision Finale</strong>
+                    {% if rapport.statut_rapport == 'RAP_VALID' %}
+                        <br><small class="text-success">Rapport validé. Félicitations !</small>
+                        {% if rapport.procesverbal %}
+                            <br><a href="{% url 'download_document' doc_id=rapport.procesverbal.documentofficiel.id_document %}" class="btn btn-sm btn-outline-success mt-2"><i class="fas fa-download"></i> Télécharger le PV</a>
+                        {% endif %}
+                    {% elif rapport.statut_rapport == 'RAP_REFUSE' %}
+                        <br><small class="text-danger">Rapport refusé. {{ rapport.commentaires_conformite }}</small>
+                        <br><small class="text-muted">Veuillez contacter le service scolarité pour les prochaines étapes.</small>
+                    {% else %}
+                        <br><small class="text-muted">En attente de décision finale.</small>
+                    {% endif %}
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+
+{% if conformite_details %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0">Détails du Contrôle de Conformité</h5>
+    </div>
+    <div class="card-body">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Critère</th>
+                    <th>Statut</th>
+                    <th>Commentaire</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detail in conformite_details %}
+                <tr>
+                    <td>{{ detail.critere.libelle_critere }}</td>
+                    <td>
+                        <span class="badge bg-{% if detail.statut_validation == 'Conforme' %}success{% elif detail.statut_validation == 'Non Conforme' %}danger{% else %}secondary{% endif %}">
+                            {{ detail.get_statut_validation_display }}
+                        </span>
+                    </td>
+                    <td>{{ detail.commentaire|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

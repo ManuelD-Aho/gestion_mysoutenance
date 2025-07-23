@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de Bord Personnel - GestionMySoutenance{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Tableau de Bord Personnel Administratif</h1>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="alert alert-info" role="alert">
+            Veuillez sélectionner votre tableau de bord spécifique :
+            {% if user.groups.filter(name='Responsable Scolarité').exists %}
+                <a href="{% url 'scolarite_dashboard' %}" class="btn btn-info ms-3">Accéder au Tableau de Bord Scolarité</a>
+            {% endif %}
+            {% if user.groups.filter(name='Agent de Conformité').exists %}
+                <a href="{% url 'conformite_dashboard' %}" class="btn btn-info ms-3">Accéder au Tableau de Bord Conformité</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

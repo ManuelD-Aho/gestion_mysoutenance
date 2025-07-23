@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Mon Profil - GestionMySoutenance{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Mon Profil</h1>
+
+<div class="row">
+    <!-- Informations Générales -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Informations Générales</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'user_profile' %}">
+                    {% csrf_token %}
+                    {% for field in user_profile_form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% for error in field.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                    <button type="submit" name="update_user_profile" class="btn btn-primary">Mettre à jour</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sécurité du Compte -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0">Sécurité du Compte</h5>
+            </div>
+            <div class="card-body">
+                <h6 class="card-title">Changer le mot de passe</h6>
+                <form method="post" action="{% url 'user_profile' %}">
+                    {% csrf_token %}
+                    {% for field in password_form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% for error in field.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                    <button type="submit" name="change_password" class="btn btn-warning">Changer le mot de passe</button>
+                </form>
+
+                <hr class="my-4">
+
+                <h6 class="card-title">Validation de l'adresse email</h6>
+                <p>Statut : 
+                    {% if email_not_validated %}
+                        <span class="badge bg-danger">Non validée</span>
+                        <form method="post" action="{% url 'user_profile' %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" name="send_email_validation" class="btn btn-sm btn-outline-primary ms-2">Renvoyer l'email de validation</button>
+                        </form>
+                    {% else %}
+                        <span class="badge bg-success">Validée</span>
+                    {% endif %}
+                </p>
+
+                <hr class="my-4">
+
+                <h6 class="card-title">Authentification à deux facteurs (2FA)</h6>
+                <p>Statut : 
+                    {% if is_2fa_active %}
+                        <span class="badge bg-success">Active</span>
+                        <form method="post" action="{% url 'user_profile' %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" name="disable_2fa_action" class="btn btn-sm btn-outline-danger ms-2">Désactiver la 2FA</button>
+                        </form>
+                    {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                        <a href="{% url 'two_factor_setup' %}" class="btn btn-sm btn-outline-primary ms-2">Activer la 2FA</a>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if is_etudiant %}
+<!-- Informations Spécifiques Étudiant -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Informations Étudiant</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'user_profile' %}">
+                    {% csrf_token %}
+                    {% for field in etudiant_profile_form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% for error in field.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                    <button type="submit" name="update_etudiant_profile" class="btn btn-primary">Mettre à jour les infos étudiant</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

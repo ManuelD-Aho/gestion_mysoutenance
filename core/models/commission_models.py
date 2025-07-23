@@ -10,6 +10,8 @@ class SessionValidation(models.Model):
     mode_session = models.CharField(max_length=50, choices=ModeSession.choices)
     statut_session = models.CharField(max_length=50, choices=StatutSession.choices, default=StatutSession.PLANIFIEE)
     rapports = models.ManyToManyField('core.RapportEtudiant', related_name='sessions')
+    membres = models.ManyToManyField('core.Enseignant', related_name='sessions_commission', blank=True) # Membres de la commission pour cette session
+    nombre_votants_requis = models.PositiveSmallIntegerField(default=1) # Pour le quorum
 
     def __str__(self):
         return self.nom_session
@@ -27,6 +29,9 @@ class VoteCommission(models.Model):
     class Meta:
         unique_together = ('session', 'rapport_etudiant', 'enseignant', 'tour_vote')
 
+    def __str__(self):
+        return f"Vote de {self.enseignant} pour {self.rapport_etudiant} ({self.decision_vote})"
+
 class ProcesVerbal(models.Model):
     id_compte_rendu = models.CharField(max_length=50, primary_key=True)
     session = models.OneToOneField('core.SessionValidation', on_delete=models.CASCADE, null=True, blank=True)
@@ -34,9 +39,10 @@ class ProcesVerbal(models.Model):
     date_creation_pv = models.DateTimeField(auto_now_add=True)
     statut_pv = models.CharField(max_length=50, choices=StatutPV.choices, default=StatutPV.BROUILLON)
     redacteur = models.ForeignKey('core.Enseignant', on_delete=models.PROTECT)
+    date_finalisation = models.DateTimeField(null=True, blank=True) # Date de validation finale par la commission
 
     def __str__(self):
-        return self.libelle_compte_rendu
+        return f"PV de la session {self.session.nom_session if self.session else 'N/A'}"
 
 class ValidationPv(models.Model):
     proces_verbal = models.ForeignKey('core.ProcesVerbal', on_delete=models.CASCADE)
@@ -47,3 +53,6 @@ class ValidationPv(models.Model):
 
     class Meta:
         unique_together = ('proces_verbal', 'enseignant')
+
+    def __str__(self):
+        return f"Validation PV par {self.enseignant} ({self.decision_validation_pv})"

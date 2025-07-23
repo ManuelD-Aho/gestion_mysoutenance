@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if is_editing %}Modifier{% else %}Créer{% endif %} Rapport - GestionMySoutenance{% endblock %}
+
+{% block extra_head %}
+    <!-- Placeholder pour un éditeur WYSIWYG (ex: TinyMCE, CKEditor) -->
+    <!-- <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script> -->
+    <style>
+        .section-item {
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{% if is_editing %}Modifier le Rapport{% else %}Créer un Nouveau Rapport{% endif %}</h1>
+
+<form method="post" action="">
+    {% csrf_token %}
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Informations Générales du Rapport</h5>
+        </div>
+        <div class="card-body">
+            {% for field in rapport_form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if is_non_conforme %}
+    <div class="alert alert-warning mb-4" role="alert">
+        <h4 class="alert-heading">Rapport non conforme !</h4>
+        <p>Votre rapport a été jugé non conforme. Veuillez apporter les corrections nécessaires et le re-soumettre.</p>
+        <p><strong>Commentaires du service de conformité :</strong></p>
+        <pre class="alert-pre">{{ rapport.commentaires_conformite }}</pre>
+        <hr>
+        <div class="mb-3">
+            <label for="id_correction_note_field" class="form-label">Note explicative des corrections apportées (obligatoire pour re-soumission)</label>
+            <textarea name="correction_note_field" id="id_correction_note_field" class="form-control" rows="5" required>{{ rapport.note_explicative_correction }}</textarea>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Contenu du Rapport (Sections)</h5>
+        </div>
+        <div class="card-body">
+            <div id="sections-container">
+                {% if sections %}
+                    {% for section in sections %}
+                        <div class="section-item" data-section-index="{{ forloop.counter0 }}">
+                            <div class="section-header">
+                                <h6 class="mb-0">Section {{ forloop.counter }}</h6>
+                                <button type="button" class="btn btn-sm btn-danger remove-section-btn"><i class="fas fa-trash"></i> Supprimer</button>
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_section_titre_{{ forloop.counter0 }}" class="form-label">Titre de la section</label>
+                                <input type="text" name="section_titre_{{ forloop.counter0 }}" id="id_section_titre_{{ forloop.counter0 }}" class="form-control" value="{{ section.titre_section }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_section_contenu_{{ forloop.counter0 }}" class="form-label">Contenu de la section</label>
+                                <textarea name="section_contenu_{{ forloop.counter0 }}" id="id_section_contenu_{{ forloop.counter0 }}" class="form-control wysiwyg-editor" rows="10">{{ section.contenu_section }}</textarea>
+                            </div>
+                            <input type="hidden" name="section_ordre_{{ forloop.counter0 }}" value="{{ section.ordre }}">
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <!-- Sections par défaut pour un nouveau rapport -->
+                    <div class="section-item" data-section-index="0">
+                        <div class="section-header">
+                            <h6 class="mb-0">Section 1</h6>
+                            <button type="button" class="btn btn-sm btn-danger remove-section-btn"><i class="fas fa-trash"></i> Supprimer</button>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_section_titre_0" class="form-label">Titre de la section</label>
+                            <input type="text" name="section_titre_0" id="id_section_titre_0" class="form-control" value="Introduction" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_section_contenu_0" class="form-label">Contenu de la section</label>
+                            <textarea name="section_contenu_0" id="id_section_contenu_0" class="form-control wysiwyg-editor" rows="10"></textarea>
+                        </div>
+                        <input type="hidden" name="section_ordre_0" value="1">
+                    </div>
+                {% endif %}
+            </div>
+            <button type="button" id="add-section-btn" class="btn btn-outline-secondary mt-3"><i class="fas fa-plus-circle"></i> Ajouter une section</button>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between mb-4">
+        <button type="submit" name="save_draft" class="btn btn-secondary"><i class="fas fa-save"></i> Sauvegarder le brouillon</button>
+        <button type="submit" name="submit_report" class="btn btn-success"><i class="fas fa-paper-plane"></i> Soumettre le rapport</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialisation de l'éditeur WYSIWYG (exemple avec TinyMCE)
+    // tinymce.init({
+    //     selector: '.wysiwyg-editor',
+    //     plugins: 'advlist autolink lists link image charmap print preview anchor',
+    //     toolbar_mode: 'floating',
+    //     toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help'
+    // });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        let sectionIndex = document.querySelectorAll('.section-item').length;
+        if (sectionIndex === 0) { // Si aucune section n'est chargée (ex: nouveau rapport sans sections par défaut)
+            sectionIndex = 0; // Commencer l'index à 0 pour la première section ajoutée dynamiquement
+        } else {
+            // S'assurer que l'index commence après la dernière section existante
+            const lastSection = document.querySelector('.section-item:last-child');
+            if (lastSection) {
+                sectionIndex = parseInt(lastSection.dataset.sectionIndex) + 1;
+            }
+        }
+
+        document.getElementById('add-section-btn').addEventListener('click', function() {
+            const container = document.getElementById('sections-container');
+            const newSectionDiv = document.createElement('div');
+            newSectionDiv.classList.add('section-item');
+            newSectionDiv.dataset.sectionIndex = sectionIndex;
+            
+            newSectionDiv.innerHTML = `
+                <div class="section-header">
+                    <h6 class="mb-0">Nouvelle Section</h6>
+                    <button type="button" class="btn btn-sm btn-danger remove-section-btn"><i class="fas fa-trash"></i> Supprimer</button>
+                </div>
+                <div class="mb-3">
+                    <label for="id_section_titre_${sectionIndex}" class="form-label">Titre de la section</label>
+                    <input type="text" name="section_titre_${sectionIndex}" id="id_section_titre_${sectionIndex}" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="id_section_contenu_${sectionIndex}" class="form-label">Contenu de la section</label>
+                    <textarea name="section_contenu_${sectionIndex}" id="id_section_contenu_${sectionIndex}" class="form-control wysiwyg-editor" rows="10"></textarea>
+                </div>
+                <input type="hidden" name="section_ordre_${sectionIndex}" value="${sectionIndex + 1}">
+            `;
+            container.appendChild(newSectionDiv);
+
+            // Réinitialiser l'éditeur WYSIWYG pour la nouvelle textarea
+            // if (typeof tinymce !== 'undefined') {
+            //     tinymce.execCommand('mceAddEditor', false, `id_section_contenu_${sectionIndex}`);
+            // }
+
+            sectionIndex++;
+            attachRemoveListeners();
+        });
+
+        function attachRemoveListeners() {
+            document.querySelectorAll('.remove-section-btn').forEach(button => {
+                button.onclick = function() {
+                    if (document.querySelectorAll('.section-item').length > 1) {
+                        this.closest('.section-item').remove();
+                        // Si vous utilisez TinyMCE, assurez-vous de le détruire aussi
+                        // tinymce.execCommand('mceRemoveEditor', false, this.closest('.section-item').querySelector('.wysiwyg-editor').id);
+                    } else {
+                        alert("Vous devez avoir au moins une section dans le rapport.");
+                    }
+                };
+            });
+        }
+
+        attachRemoveListeners(); // Attacher les listeners aux sections existantes au chargement
+    });
+</script>
+{% endblock %}

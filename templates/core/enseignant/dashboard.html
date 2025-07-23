@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de Bord Enseignant - GestionMySoutenance{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Bienvenue, {{ enseignant.nom_complet }} !</h1>
+
+<div class="row">
+    <!-- Rapports où l'enseignant est directeur de mémoire -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Mes Rapports dirigés</h5>
+            </div>
+            <div class="card-body">
+                {% if rapports_directeur %}
+                <ul class="list-group list-group-flush">
+                    {% for rapport in rapports_directeur %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ rapport.libelle_rapport_etudiant }}</strong>
+                            <br><small class="text-muted">Étudiant: {{ rapport.etudiant.nom_complet }}</small>
+                        </div>
+                        <span class="badge bg-{% if rapport.statut_rapport == 'RAP_VALID' %}success{% elif rapport.statut_rapport == 'RAP_REFUSE' %}danger{% else %}info{% endif %}">
+                            {{ rapport.get_statut_rapport_display }}
+                        </span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-center text-muted">Vous ne dirigez aucun rapport pour le moment.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sessions de Commission -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Mes Sessions de Commission</h5>
+            </div>
+            <div class="card-body">
+                {% if sessions_commission %}
+                <ul class="list-group list-group-flush">
+                    {% for session in sessions_commission %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ session.nom_session }}</strong>
+                            <br><small class="text-muted">Du {{ session.date_debut_session|date:"d M Y" }} au {{ session.date_fin_prevue|date:"d M Y" }}</small>
+                        </div>
+                        <div>
+                            <span class="badge bg-{% if session.statut_session == 'en_cours' %}success{% elif session.statut_session == 'planifiee' %}info{% else %}secondary{% endif %}">
+                                {{ session.get_statut_session_display }}
+                            </span>
+                            <a href="{% url 'commission_session_detail' session_id=session.id_session %}" class="btn btn-sm btn-outline-primary ms-2">Détails</a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-center text-muted">Vous ne participez à aucune session de commission pour le moment.</p>
+                {% endif %}
+                <div class="text-center mt-3">
+                    <a href="{% url 'commission_session_list' %}" class="btn btn-outline-info"><i class="fas fa-list"></i> Voir toutes les sessions</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Votes en attente -->
+    <div class="col-md-12 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0">Rapports en attente de votre vote</h5>
+            </div>
+            <div class="card-body">
+                {% if votes_en_attente %}
+                <ul class="list-group list-group-flush">
+                    {% for item in votes_en_attente %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Rapport : {{ item.rapport.libelle_rapport_etudiant }}</strong>
+                            <br><small class="text-muted">Étudiant : {{ item.rapport.etudiant.nom_complet }}</small>
+                            <br><small class="text-muted">Session : {{ item.session.nom_session }}</small>
+                        </div>
+                        <a href="{% url 'commission_rapport_vote' session_id=item.session.id_session rapport_id=item.rapport.id_rapport_etudiant %}" class="btn btn-sm btn-warning">
+                            <i class="fas fa-gavel"></i> Voter
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-center text-muted">Aucun vote en attente pour le moment.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

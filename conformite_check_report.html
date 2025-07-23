@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de Bord Scolarité - GestionMySoutenance{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Tableau de Bord : Responsable Scolarité</h1>
+
+<div class="row">
+    <!-- Étudiants à Activer -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Étudiants en attente d'activation de compte</h5>
+            </div>
+            <div class="card-body">
+                {% if students_to_activate %}
+                <ul class="list-group list-group-flush">
+                    {% for etudiant in students_to_activate %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ etudiant.nom_complet }}</strong>
+                            <br><small class="text-muted">{{ etudiant.utilisateur.email }}</small>
+                        </div>
+                        <form method="post" action="{% url 'scolarite_activate_student_account' etudiant_id=etudiant.utilisateur.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-success">Activer le compte</button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-center text-muted">Aucun étudiant en attente d'activation.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Stages en attente de validation -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Stages en attente de validation</h5>
+            </div>
+            <div class="card-body">
+                {% if pending_stages %}
+                <ul class="list-group list-group-flush">
+                    {% for stage in pending_stages %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ stage.sujet_stage|truncatechars:50 }}</strong>
+                            <br><small class="text-muted">Étudiant: {{ stage.etudiant.nom_complet }}</small>
+                            <br><small class="text-muted">Entreprise: {{ stage.entreprise.libelle_entreprise }}</small>
+                        </div>
+                        <form method="post" action="{% url 'scolarite_validate_stage' stage_id=stage.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-info">Valider le stage</button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-center text-muted">Aucun stage en attente de validation.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Pénalités en attente -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0">Pénalités en attente de régularisation</h5>
+            </div>
+            <div class="card-body">
+                {% if pending_penalties %}
+                <ul class="list-group list-group-flush">
+                    {% for penalty in pending_penalties %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ penalty.etudiant.nom_complet }}</strong>
+                            <br><small class="text-muted">Motif: {{ penalty.motif|truncatechars:50 }}</small>
+                            <br><small class="text-muted">Montant dû: {{ penalty.montant_du }}</small>
+                        </div>
+                        <form method="post" action="{% url 'scolarite_record_penalty_payment' penalty_id=penalty.id_penalite %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-warning">Marquer comme réglée</button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-center text-muted">Aucune pénalité en attente.</p>
+                {% endif %}
+                <div class="text-center mt-3">
+                    <a href="{% url 'scolarite_manage_penalties' %}" class="btn btn-outline-warning"><i class="fas fa-cogs"></i> Gérer toutes les pénalités</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Réclamations Récentes -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Réclamations Récentes</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_reclamations %}
+                <ul class="list-group list-group-flush">
+                    {% for reclamation in recent_reclamations %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ reclamation.sujet|truncatechars:50 }}</strong>
+                            <br><small class="text-muted">De: {{ reclamation.etudiant.nom_complet }}</small>
+                            <br><small class="text-muted">Statut: {{ reclamation.get_statut_display }}</small>
+                        </div>
+                        <a href="{% url 'scolarite_reclamation_detail' reclamation_id=reclamation.id %}" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-eye"></i> Voir
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-center text-muted">Aucune réclamation récente.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

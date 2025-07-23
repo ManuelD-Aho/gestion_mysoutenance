@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de Bord Conformité - GestionMySoutenance{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Tableau de Bord : Agent de Contrôle de Conformité</h1>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Rapports en attente de vérification</h5>
+    </div>
+    <div class="card-body">
+        {% if reports_to_check %}
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Rapport</th>
+                    <th>Étudiant</th>
+                    <th>Date de Soumission</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rapport in reports_to_check %}
+                <tr>
+                    <td>{{ rapport.libelle_rapport_etudiant }}</td>
+                    <td>{{ rapport.etudiant.nom_complet }}</td>
+                    <td>{{ rapport.date_soumission|date:"d M Y H:i" }}</td>
+                    <td><span class="badge bg-info">{{ rapport.get_statut_rapport_display }}</span></td>
+                    <td>
+                        <a href="{% url 'conformite_check_report' rapport_id=rapport.id_rapport_etudiant %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-check-double"></i> Vérifier
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-center text-muted">Aucun rapport en attente de vérification de conformité pour le moment.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

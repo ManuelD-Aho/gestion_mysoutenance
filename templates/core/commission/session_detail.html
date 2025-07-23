@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}Détails Session {{ session.nom_session }} - GestionMySoutenance{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Détails de la Session : "{{ session.nom_session }}"</h1>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Informations de la Session</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Président :</strong> {{ session.president_session.nom_complet }}</p>
+                <p><strong>Dates :</strong> Du {{ session.date_debut_session|date:"d M Y H:i" }} au {{ session.date_fin_prevue|date:"d M Y H:i" }}</p>
+                <p><strong>Mode :</strong> {{ session.get_mode_session_display }}</p>
+                <p><strong>Statut :</strong> 
+                    <span class="badge bg-{% if session.statut_session == 'en_cours' %}success{% elif session.statut_session == 'planifiee' %}info{% else %}secondary{% endif %} fs-6">
+                        {{ session.get_statut_session_display }}
+                    </span>
+                </p>
+                <p><strong>Votants requis :</strong> {{ session.nombre_votants_requis }}</p>
+                
+                {% if is_president or user.is_superuser %}
+                    <div class="mt-3">
+                        {% if session.statut_session == 'planifiee' %}
+                            <form method="post" action="{% url 'commission_session_action' session_id=session.id_session action='start' %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success"><i class="fas fa-play"></i> Démarrer la session</button>
+                            </form>
+                        {% elif session.statut_session == 'en_cours' %}
+                            <form method="post" action="{% url 'commission_session_action' session_id=session.id_session action='close' %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger"><i class="fas fa-stop"></i> Clôturer la session</button>
+                            </form>
+                        {% endif %}
+                        <a href="{% url 'commission_pv_manage' session_id=session.id_session %}" class="btn btn-secondary ms-2">
+                            <i class="fas fa-scroll"></i> Gérer le PV
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Membres de la Commission</h5>
+            </div>
+            <div class="card-body">
+                {% if session.membres.all %}
+                <ul class="list-group list-group-flush">
+                    {% for member in session.membres.all %}
+                    <li class="list-group-item">
+                        <i class="fas fa-user-tie me-2"></i> {{ member.nom_complet }} 
+                        {% if member == session.president_session %}(Président){% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-center text-muted">Aucun membre assigné à cette session.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mt-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">Rapports à Évaluer</h5>
+    </div>
+    <div class="card-body">
+        {% if rapports_data %}
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Rapport</th>
+                    <th>Étudiant</th>
+                    <th>Statut</th>
+                    <th>Votes Émis</th>
+                    <th>Votants Restants</th>
+                    <th>Tours de Vote</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in rapports_data %}
+                <tr>
+                    <td>{{ data.rapport.libelle_rapport_etudiant }}</td>
+                    <td>{{ data.rapport.etudiant.nom_complet }}</td>
+                    <td>
+                        <span class="badge bg-{% if data.statut_actuel == 'Validé' %}success{% elif data.statut_actuel == 'Refusé' %}danger{% elif data.statut_actuel == 'Non Conforme' %}warning{% else %}info{% endif %}">
+                            {{ data.statut_actuel }}
+                        </span>
+                    </td>
+                    <td>{{ data.votes_emis_count }} / {{ data.total_members }}</td>
+                    <td>
+                        {% if data.remaining_voters %}
+                            {% for user_obj in data.remaining_voters %}
+                                <span class="badge bg-secondary">{{ user_obj.username }}</span>
+                            {% endfor %}
+                        {% else %}
+                            Tous ont voté
+                        {% endif %}
+                    </td>
+                    <td>{{ data.tours_de_vote_count }}</td>
+                    <td>
+                        <a href="{% url 'commission_rapport_vote' session_id=session.id_session rapport_id=data.rapport.id_rapport_etudiant %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-gavel"></i> Voter / Voir Votes
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-center text-muted">Aucun rapport assigné à cette session.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

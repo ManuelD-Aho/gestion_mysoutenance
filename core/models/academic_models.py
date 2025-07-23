@@ -1,5 +1,7 @@
 from django.db import models
+
 from core.enums import StatutPaiement, DecisionPassage, TypePenalite, StatutPenalite
+
 
 class AnneeAcademique(models.Model):
     id_annee_academique = models.CharField(max_length=50, primary_key=True)
@@ -74,6 +76,7 @@ class Stage(models.Model):
     date_fin_stage = models.DateField(null=True, blank=True)
     sujet_stage = models.TextField(null=True, blank=True)
     nom_tuteur_entreprise = models.CharField(max_length=100, null=True, blank=True)
+    est_valide = models.BooleanField(default=False) # Ajout pour la validation du stage par le RS
 
     class Meta:
         unique_together = ('entreprise', 'etudiant', 'date_debut_stage')
@@ -116,3 +119,21 @@ class Note(models.Model):
 
     class Meta:
         unique_together = ('etudiant', 'ecue', 'annee_academique')
+
+class DocumentOfficiel(models.Model):
+    id_document = models.CharField(max_length=50, primary_key=True)
+    etudiant = models.ForeignKey('core.Etudiant', on_delete=models.CASCADE, null=True, blank=True)
+    type_document = models.CharField(max_length=100) # Ex: 'Bulletin', 'AttestationScolarite', 'RecuPaiement'
+    annee_academique = models.ForeignKey('core.AnneeAcademique', on_delete=models.PROTECT, null=True, blank=True)
+    chemin_fichier = models.CharField(max_length=255) # Chemin vers le fichier PDF stocké
+    date_generation = models.DateTimeField(auto_now_add=True)
+    version = models.PositiveIntegerField(default=1)
+    est_officiel = models.BooleanField(default=True) # False pour les provisoires non stockés
+    genere_par = models.ForeignKey('core.PersonnelAdministratif', on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        unique_together = ('etudiant', 'type_document', 'annee_academique', 'version')
+        ordering = ['-date_generation']
+
+    def __str__(self):
+        return f"{self.type_document} - {self.etudiant} ({self.annee_academique}) v{self.version}"

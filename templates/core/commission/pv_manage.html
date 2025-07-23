@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Gérer le PV de la Session {{ session.nom_session }} - GestionMySoutenance{% endblock %}
+
+{% block extra_head %}
+    <!-- Placeholder pour un éditeur WYSIWYG (ex: TinyMCE, CKEditor) -->
+    <!-- <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script> -->
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Gérer le Procès-Verbal de la Session : "{{ session.nom_session }}"</h1>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Statut du Procès-Verbal</h5>
+    </div>
+    <div class="card-body">
+        {% if pv %}
+            <p><strong>Statut actuel :</strong> 
+                <span class="badge bg-{% if pv.statut_pv == 'PV_VALIDE' %}success{% elif pv.statut_pv == 'PV_ATTENTE_APPROBATION' %}info{% elif pv.statut_pv == 'PV_REJETE' %}danger{% else %}secondary{% endif %} fs-6">
+                    {{ pv.get_statut_pv_display }}
+                </span>
+            </p>
+            <p><strong>Rédacteur :</strong> {{ pv.redacteur.nom_complet }}</p>
+            {% if pv.date_finalisation %}<p><strong>Date de finalisation :</strong> {{ pv.date_finalisation|date:"d M Y H:i" }}</p>{% endif %}
+
+            {% if pv.statut_pv == 'PV_VALIDE' %}
+                <div class="alert alert-success mt-3">
+                    Le Procès-Verbal a été validé et diffusé.
+                    {% if pv.documentofficiel_set.first %}
+                        <a href="{% url 'download_document' doc_id=pv.documentofficiel_set.first.id_document %}" class="btn btn-sm btn-success ms-3"><i class="fas fa-download"></i> Télécharger le PV</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            {% if is_redacteur and pv.statut_pv in ['PV_BROUILLON', 'PV_REJETE'] %}
+                <hr>
+                <h6 class="mt-4">Modifier le contenu du PV</h6>
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% for error in field.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary" name="save_pv_content"><i class="fas fa-save"></i> Sauvegarder</button>
+                    <button type="submit" class="btn btn-success ms-2" name="submit_for_approval"><i class="fas fa-paper-plane"></i> Soumettre pour approbation</button>
+                </form>
+            {% elif pv.statut_pv == 'PV_ATTENTE_APPROBATION' %}
+                <hr>
+                <h6 class="mt-4">Approbation du PV</h6>
+                {% if request.user.profil_enseignant == pv.redacteur %}
+                    <div class="alert alert-info">Vous êtes le rédacteur de ce PV. Vous n'avez pas besoin de l'approuver.</div>
+                {% elif pv.validationpv_set.filter(enseignant=request.user.profil_enseignant).exists %}
+                    <div class="alert alert-secondary">Vous avez déjà enregistré votre décision pour ce PV.</div>
+                {% else %}
+                    <form method="post" action="{% url 'commission_pv_approve_request' pv_id=pv.id_compte_rendu %}">
+                        {% csrf_token %}
+                        {% for field in approval_form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                {{ field }}
+                                {% for error in field.errors %}
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Soumettre ma décision</button>
+                    </form>
+                {% endif %}
+            {% endif %}
+
+            {% if is_president or user.is_superuser %}
+                {% if pv.statut_pv == 'PV_ATTENTE_APPROBATION' %}
+                    <hr>
+                    <h6 class="mt-4">Actions du Président</h6>
+                    <form method="post" action="{% url 'commission_pv_finalize' pv_id=pv.id_compte_rendu %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger"><i class="fas fa-lock"></i> Finaliser le PV</button>
+                        <small class="text-muted ms-2">Assurez-vous que toutes les approbations nécessaires sont obtenues avant de finaliser.</small>
+                    </form>
+                {% endif %}
+            {% endif %}
+
+        {% else %}
+            <p class="text-center text-muted">Aucun Procès-Verbal n'a encore été initié pour cette session.</p>
+            {% if is_president or user.is_superuser %}
+                <form method="post" class="text-center">
+                    {% csrf_token %}
+                    <button type="submit" name="initiate_pv" class="btn btn-success"><i class="fas fa-file-alt"></i> Initier le Procès-Verbal</button>
+                </form>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+{% if pv %}
+<div class="card shadow-sm mt-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">Historique des Approbations</h5>
+    </div>
+    <div class="card-body">
+        {% if pv_approvals %}
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Membre</th>
+                    <th>Décision</th>
+                    <th>Commentaire</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for approval in pv_approvals %}
+                <tr>
+                    <td>{{ approval.enseignant.nom_complet }}</td>
+                    <td>
+                        <span class="badge bg-{% if approval.decision_validation_pv == 'PV_APPROUVE' %}success{% elif approval.decision_validation_pv == 'PV_MODIF_DEMANDEE' %}warning{% else %}secondary{% endif %}">
+                            {{ approval.get_decision_validation_pv_display }}
+                        </span>
+                    </td>
+                    <td>{{ approval.commentaire_validation_pv|default:"-" }}</td>
+                    <td>{{ approval.date_validation|date:"d M Y H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-center text-muted">Aucune approbation enregistrée pour ce PV.</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialisation de l'éditeur WYSIWYG (exemple avec TinyMCE)
+    // tinymce.init({
+    //     selector: '.wysiwyg-editor',
+    //     plugins: 'advlist autolink lists link image charmap print preview anchor',
+    //     toolbar_mode: 'floating',
+    //     toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help'
+    // });
+</script>
+{% endblock %}

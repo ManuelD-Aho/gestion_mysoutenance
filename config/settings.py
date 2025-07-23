@@ -24,14 +24,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY')
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-votre-cle-secrete-par-defaut-si-non-definie')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
-
-
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
 
 # Application definition
@@ -50,7 +48,6 @@ INSTALLED_APPS = [
 # config/settings.py
 
 JAZZMIN_SETTINGS = {
-    # Thème et Titres
     "site_title": "GMS Admin",
     "site_header": "GestionMySoutenance",
     "site_brand": "GMS",
@@ -58,13 +55,11 @@ JAZZMIN_SETTINGS = {
     "copyright": "GestionMySoutenance Ltd",
     "default_theme": "darkly",
 
-    # Affichage
     "show_sidebar": True,
     "navigation_expanded": True,
     "hide_apps": [],
     "hide_models": [],
 
-    # Icônes pour les applications et modèles
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
@@ -81,17 +76,33 @@ JAZZMIN_SETTINGS = {
         "core.Stage": "fas fa-building",
         "core.Penalite": "fas fa-exclamation-triangle",
         "core.CritereConformite": "fas fa-check-double",
+        "core.Ue": "fas fa-book",
+        "core.Ecue": "fas fa-book-open",
+        "core.Entreprise": "fas fa-industry",
+        "core.Grade": "fas fa-award",
+        "core.Fonction": "fas fa-briefcase",
+        "core.GradeEnseignant": "fas fa-certificate",
+        "core.FonctionEnseignant": "fas fa-user-tag",
+        "core.ProcesVerbal": "fas fa-scroll",
+        "core.VoteCommission": "fas fa-vote-yea",
+        "core.ValidationPv": "fas fa-check-circle",
+        "core.Sequence": "fas fa-hashtag",
+        "core.Notification": "fas fa-bell",
+        "core.Reclamation": "fas fa-headset",
+        "core.Delegation": "fas fa-user-friends",
+        "core.DocumentOfficiel": "fas fa-file-pdf",
+        "core.Note": "fas fa-clipboard-list",
     },
 
-    # Ordre et regroupement du menu
     "order_with_respect_to": [
-        # Groupe 1: Accès & Profils
         "auth",
         "core.Etudiant",
         "core.Enseignant",
         "core.PersonnelAdministratif",
+        "core.Delegation", # Nouveau
+        "core.Notification", # Nouveau
+        "core.Reclamation", # Nouveau
 
-        # Groupe 2: Structure Académique
         "core.AnneeAcademique",
         "core.NiveauEtude",
         "core.Specialite",
@@ -99,24 +110,28 @@ JAZZMIN_SETTINGS = {
         "core.Ecue",
         "core.Entreprise",
 
-        # Groupe 3: Workflow de Soutenance
         "core.RapportEtudiant",
+        "core.SectionRapport", # Nouveau
+        "core.ConformiteRapportDetail", # Nouveau
         "core.SessionValidation",
+        "core.VoteCommission", # Nouveau
         "core.ProcesVerbal",
+        "core.ValidationPv", # Nouveau
 
-        # Groupe 4: Gestion Administrative
         "core.Inscription",
         "core.Stage",
         "core.Penalite",
-        "core.Note",
+        "core.Note", # Nouveau
+        "core.DocumentOfficiel", # Nouveau
 
-        # Groupe 5: Paramètres
         "core.CritereConformite",
         "core.Grade",
         "core.Fonction",
+        "core.GradeEnseignant", # Nouveau
+        "core.FonctionEnseignant", # Nouveau
+        "core.Sequence", # Nouveau
     ],
 
-    # Liens personnalisés pour créer les "dossiers" du menu
     "custom_links": {
         "core": [{
             "name": "Faire un lien",
@@ -227,21 +242,114 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = 'fr-fr' # Changé en français
+TIME_ZONE = 'UTC' # Gardons UTC pour la cohérence des dates en DB
 
 USE_I18N = True
-
-USE_TZ = True
-
+USE_L10N = True # Pour les formats de date/heure localisés
+USE_TZ = True # Indispensable pour la gestion des fuseaux horaires avec timezone.make_aware()
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+STATIC_ROOT = BASE_DIR / 'staticfiles' # Pour la collecte des fichiers statiques en production
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Custom Settings for GestionMySoutenance (can be moved to a separate model for dynamic management)
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_TIME_MINUTES = 30
+PASSWORD_MIN_LENGTH = 8
+TOKEN_VALIDITY_HOURS = 24 # Durée de validité des jetons (email validation, password reset)
+PENALTY_GRACE_PERIOD_YEARS = 2 # Années de dépassement avant pénalité
+PENALTY_AMOUNT_PER_YEAR = 50000 # Montant de la pénalité financière
+
+# Email Configuration (for notifications)
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend') # Utilise la console en dev
+EMAIL_HOST = os.environ.get('EMAIL_HOST')
+EMAIL_PORT = os.environ.get('EMAIL_PORT')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@gestionmysoutenance.com')
+SERVER_EMAIL = DEFAULT_FROM_EMAIL # Pour les emails d'erreur
+
+# Session Configuration (for real-time RBAC updates)
+# Remplacer le gestionnaire de session par défaut par un gestionnaire de base de données
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_SAVE_EVERY_REQUEST = True # Sauvegarde la session à chaque requête pour s'assurer que les changements sont persistés
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False # La session persiste après la fermeture du navigateur
+SESSION_COOKIE_AGE = 1209600 # 2 semaines en secondes (valeur par défaut de Django)
+
+# File Storage (for generated PDFs)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media' # Répertoire où les fichiers uploadés/générés seront stockés
+
+# Logging (for audit and error logs)
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        'file_audit': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'audit.log',
+            'formatter': 'verbose'
+        },
+        'file_error': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'error.log',
+            'formatter': 'verbose'
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'audit_logger': { # Logger spécifique pour les actions d'audit
+            'handlers': ['file_audit'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'error_logger': { # Logger spécifique pour les erreurs applicatives
+            'handlers': ['file_error'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}
+
+# Pour les tâches asynchrones (ex: Celery) - Configuration minimale
+# BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+# CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+# CELERY_ACCEPT_CONTENT = ['json']
+# CELERY_TASK_SERIALIZER = 'json'
+# CELERY_RESULT_SERIALIZER = 'json'
+# CELERY_TIMEZONE = 'UTC'

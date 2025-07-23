@@ -20,6 +20,10 @@ class RapportEtudiant(models.Model):
     statut_rapport = models.CharField(max_length=50, choices=StatutRapport.choices, default=StatutRapport.BROUILLON)
     date_soumission = models.DateTimeField(null=True, blank=True)
     directeur_memoire = models.ForeignKey('core.Enseignant', on_delete=models.SET_NULL, null=True, blank=True)
+    # Champ pour stocker les commentaires de non-conformité globaux
+    commentaires_conformite = models.TextField(null=True, blank=True)
+    # Champ pour la note explicative lors de la re-soumission
+    note_explicative_correction = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return self.libelle_rapport_etudiant
@@ -40,6 +44,7 @@ class ConformiteRapportDetail(models.Model):
     statut_validation = models.CharField(max_length=50, choices=StatutConformite.choices)
     commentaire = models.TextField(null=True, blank=True)
     date_verification = models.DateTimeField(auto_now_add=True)
+    verifie_par = models.ForeignKey('core.PersonnelAdministratif', on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         unique_together = ('rapport_etudiant', 'critere')

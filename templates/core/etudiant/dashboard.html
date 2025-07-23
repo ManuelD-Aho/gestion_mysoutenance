@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de Bord Étudiant - GestionMySoutenance{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Bienvenue, {{ etudiant.nom_complet }} !</h1>
+
+<div class="row">
+    <!-- Section Rapports -->
+    <div class="col-md-8 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Mes Rapports de Soutenance</h5>
+            </div>
+            <div class="card-body">
+                {% if rapports %}
+                <ul class="list-group list-group-flush">
+                    {% for rapport in rapports %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ rapport.libelle_rapport_etudiant }}</strong>
+                            <br>
+                            <small class="text-muted">Thème: {{ rapport.theme }}</small>
+                        </div>
+                        <div>
+                            <span class="badge bg-{% if rapport.statut_rapport == 'RAP_VALID' %}success{% elif rapport.statut_rapport == 'RAP_REFUSE' %}danger{% elif rapport.statut_rapport == 'RAP_NON_CONF' %}warning{% else %}info{% endif %}">
+                                {{ rapport.get_statut_rapport_display }}
+                            </span>
+                            <a href="{% url 'rapport_suivi' rapport_id=rapport.id_rapport_etudiant %}" class="btn btn-sm btn-outline-primary ms-2">Suivi</a>
+                            {% if rapport.statut_rapport == 'RAP_BROUILLON' or rapport.statut_rapport == 'RAP_NON_CONF' %}
+                                <a href="{% url 'rapport_edit' rapport_id=rapport.id_rapport_etudiant %}" class="btn btn-sm btn-outline-secondary ms-1">Modifier</a>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-center text-muted">Vous n'avez pas encore de rapports soumis.</p>
+                {% endif %}
+                <div class="text-center mt-3">
+                    {% if can_submit_report %}
+                        <a href="{% url 'rapport_create' %}" class="btn btn-success"><i class="fas fa-plus-circle"></i> Soumettre un nouveau rapport</a>
+                    {% else %}
+                        <button class="btn btn-secondary" disabled><i class="fas fa-plus-circle"></i> Soumettre un nouveau rapport</button>
+                        <p class="text-danger mt-2">Vous n'êtes pas éligible à la soumission. Vérifiez votre profil.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section Notifications et Réclamations -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Mes Notifications</h5>
+            </div>
+            <div class="card-body">
+                {% if notifications %}
+                <ul class="list-group list-group-flush">
+                    {% for notification in notifications %}
+                    <li class="list-group-item">
+                        <i class="fas fa-bell text-info me-2"></i> {{ notification.message|truncatechars:80 }}
+                        <br><small class="text-muted">{{ notification.date_creation|date:"d M Y H:i" }}</small>
+                        {% if notification.lien_action %}
+                            <a href="{{ notification.lien_action }}" class="btn btn-sm btn-link p-0 ms-2">Voir</a>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-center text-muted">Aucune nouvelle notification.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Mes Réclamations Récentes</h5>
+            </div>
+            <div class="card-body">
+                {% if reclamations %}
+                <ul class="list-group list-group-flush">
+                    {% for reclamation in reclamations %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ reclamation.sujet|truncatechars:50 }}</strong>
+                            <br><small class="text-muted">Statut: {{ reclamation.get_statut_display }}</small>
+                        </div>
+                        <span class="badge bg-{% if reclamation.statut == 'RECLA_OUVERTE' %}danger{% elif reclamation.statut == 'RECLA_EN_COURS' %}warning{% else %}success{% endif %}">
+                            {{ reclamation.get_statut_display }}
+                        </span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-center text-muted">Aucune réclamation récente.</p>
+                {% endif %}
+                <div class="text-center mt-3">
+                    <a href="{% url 'etudiant_reclamations' %}" class="btn btn-outline-secondary"><i class="fas fa-plus-circle"></i> Gérer les réclamations</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
